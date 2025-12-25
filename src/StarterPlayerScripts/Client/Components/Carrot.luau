@@ -326,6 +326,8 @@ end
 
 function Carrot:PlayGrowthVisuals()
     local tool = self.Instance
+    
+    -- 1. Highlight Effect (Existing)
     local highlight = tool:FindFirstChildOfClass("Highlight")
     if not highlight then
         highlight = Instance.new("Highlight")
@@ -339,6 +341,107 @@ function Carrot:PlayGrowthVisuals()
         FillTransparency = 1,
         OutlineTransparency = 1
     }):Play()
+    
+    -- 2. Particle Burst
+    self:PlayGrowthParticles()
+    
+    -- 3. Camera Shake
+    self:PlayCameraShake()
+    
+    -- 4. Floating Text
+    self:SpawnFloatingText()
+end
+
+function Carrot:PlayGrowthParticles()
+    local tool = self.Instance
+    local handle = tool:FindFirstChild("Handle") or tool:FindFirstChild("PrimaryPart") or tool:FindFirstChildOfClass("BasePart")
+    if not handle then return end
+    
+    local att = Instance.new("Attachment")
+    att.Parent = handle
+    
+    local emitter = Instance.new("ParticleEmitter")
+    emitter.Texture = "rbxassetid://1266170131" -- Generic sparkle/star
+    emitter.Color = ColorSequence.new(Color3.fromRGB(255, 170, 0))
+    emitter.LightEmission = 1
+    emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0)})
+    emitter.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1)})
+    emitter.Lifetime = NumberRange.new(0.5, 1)
+    emitter.Speed = NumberRange.new(5, 10)
+    emitter.SpreadAngle = Vector2.new(360, 360)
+    emitter.Rate = 0
+    emitter.Parent = att
+    
+    emitter:Emit(20)
+    
+    Debris:AddItem(att, 2)
+end
+
+function Carrot:PlayCameraShake()
+    local camera = workspace.CurrentCamera
+    local duration = 0.15
+    local intensity = 0.8
+    
+    -- Simple coroutine shake
+    task.spawn(function()
+        local startTime = os.clock()
+        while os.clock() - startTime < duration do
+            local dx = (math.random() - 0.5) * intensity
+            local dy = (math.random() - 0.5) * intensity
+            local dz = (math.random() - 0.5) * intensity
+            
+            -- We offset the camera slightly. 
+            -- Note: A proper CameraShaker module is better, but this works for instant juice.
+            -- Be careful not to override standard control scripts. 
+            -- modifying CoordinateFrame relative to itself might drift.
+            
+            -- Safer approach: Apply impulse if Humanoid? No. 
+            -- Humanoid.CameraOffset is safer.
+            local humanoid = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid.CameraOffset = Vector3.new(dx, dy, dz)
+            end
+            
+            task.wait()
+        end
+        -- Reset
+        local humanoid = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.CameraOffset = Vector3.new(0, 0, 0)
+        end
+    end)
+end
+
+function Carrot:SpawnFloatingText()
+    local character = Players.LocalPlayer.Character
+    local head = character and character:FindFirstChild("Head")
+    if not head then return end
+    
+    local scale = Players.LocalPlayer:GetAttribute("CarrotScale") or 1.0
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.fromScale(4, 2)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.Adornee = head
+    billboard.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.fromScale(1, 1)
+    label.BackgroundTransparency = 1
+    label.Text = string.format("x%.1f GROWTH!", scale)
+    label.Font = Enum.Font.FredokaOne
+    label.TextColor3 = Color3.fromRGB(255, 200, 50)
+    label.TextStrokeTransparency = 0
+    label.TextScaled = true
+    label.Parent = billboard
+    
+    -- Animate up and fade
+    local tInfo = TweenInfo.new(1, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    TweenService:Create(billboard, tInfo, {StudsOffset = Vector3.new(0, 6, 0)}):Play()
+    
+    TweenService:Create(label, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {TextTransparency = 1, TextStrokeTransparency = 1}):Play()
+    
+    Debris:AddItem(billboard, 1.2)
 end
 
 function Carrot:PlayAttackFeedback(attackType)
