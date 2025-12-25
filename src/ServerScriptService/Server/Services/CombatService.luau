@@ -64,7 +64,8 @@ function CombatService:HandleAttack(player, attackType)
     local sizeZ = 5 * carrotScale
     
     -- Position Closer (Gap of 1 stud from RootPart)
-    local offsetZ = -1.5 - (sizeZ / 2) 
+    -- Modified to overlap slightly (-0.5 from center) to ensure zero deadzone
+    local offsetZ = -(sizeZ / 2) - 0.5 
     
     -- [Create Hitbox Part]
     local hbPart = Instance.new("Part")

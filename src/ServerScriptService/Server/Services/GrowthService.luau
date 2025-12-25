@@ -75,7 +75,7 @@ function GrowthService:GrowCarrot(player)
 	if not humanoid then return end
 	
 	-- Increase Max Scale Limit significantly
-	local maxScale = 20.0
+	local maxScale = 3.0
 	
 	-- Growth rate: 5% per shake (1/20) as per GDD
 	local nextScale = currentScale * 1.05
