@@ -21,7 +21,7 @@ function QuestUI.new(props)
 	local quests = props.quests
 	local isVisible = props.isVisible
 	local onClaim = props.onClaim
-	local onToggle = props.onToggle
+	local onClaim = props.onClaim
 	local parent = props.Parent
 	
 	local gui = scope:New "ScreenGui" {
@@ -30,30 +30,6 @@ function QuestUI.new(props)
 		ResetOnSpawn = false,
 		
 		[Children] = {
-			-- Right Side Button
-			scope:New "TextButton" {
-				Name = "QuestButton",
-				Position = UDim2.new(1, -20, 0.5, 0), -- Right Center
-				AnchorPoint = Vector2.new(1, 0.5),
-				Size = UDim2.fromOffset(60, 60),
-				BackgroundColor3 = Color3.fromRGB(241, 196, 15),
-				Text = "",
-				
-				[Fusion.OnEvent("Activated")] = onToggle,
-				
-				[Children] = {
-					scope:New "UICorner" { CornerRadius = UDim.new(0, 12) },
-					scope:New "UIStroke" { Thickness = 3, Color = Color3.fromRGB(255, 255, 255) },
-					scope:New "ImageLabel" {
-						Size = UDim2.fromScale(0.7, 0.7),
-						Position = UDim2.fromScale(0.5, 0.5),
-						AnchorPoint = Vector2.new(0.5, 0.5),
-						BackgroundTransparency = 1,
-						Image = "rbxassetid://13583271101", -- Generic scroll/quest icon
-					}
-				}
-			},
-			
 			-- Main Quest Window
 			scope:New "Frame" {
 				Name = "QuestWindow",

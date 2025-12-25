@@ -279,6 +279,12 @@ function CarrotSkinUI:CreateSideButtons()
 			self:CreateCircleButton("💎", "SHOP", function()
 				self.Tab:set("Shop")
 				self.IsOpen:set(true)
+			end),
+			
+			self:CreateCircleButton("📜", "QUESTS", function()
+				local events = ReplicatedStorage:FindFirstChild("Events")
+				local ev = events and events:FindFirstChild("ClientQuestToggle")
+				if ev then ev:Fire() end
 			end)
 		}
 	}

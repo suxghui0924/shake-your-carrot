@@ -19,6 +19,25 @@ function QuestController:Init()
 	self.quests = self.scope:Value({})
 	self.isVisible = self.scope:Value(false)
 
+	-- Create Client-side Event for CarrotSkinUI
+	local events = ReplicatedStorage:FindFirstChild("Events")
+	if not events then
+		events = Instance.new("Folder")
+		events.Name = "Events"
+		events.Parent = ReplicatedStorage
+	end
+	
+	local toggleEvent = events:FindFirstChild("ClientQuestToggle")
+	if not toggleEvent then
+		toggleEvent = Instance.new("BindableEvent")
+		toggleEvent.Name = "ClientQuestToggle"
+		toggleEvent.Parent = events
+	end
+	
+	toggleEvent.Event:Connect(function()
+		self.isVisible:set(not Fusion.peek(self.isVisible))
+	end)
+
 	-- Mount UI
 	QuestUI.new({
 		scope = self.scope,
@@ -30,9 +49,7 @@ function QuestController:Init()
 				questId = questId
 			})
 		end,
-		onToggle = function()
-			self.isVisible:set(not self.isVisible:get())
-		end
+		-- onToggle handled via event
 	})
 	
 	-- Listen for Updates
