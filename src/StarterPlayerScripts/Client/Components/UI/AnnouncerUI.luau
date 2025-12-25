@@ -376,8 +376,8 @@ function AnnouncerUI.new(props)
                                 AutomaticSize = Enum.AutomaticSize.XY,
                                 [Children] = {
 									scope:New "UIGradient" { Color = ColorSequence.new(Color3.fromRGB(255, 160, 20), Color3.fromRGB(255, 100, 0)), Rotation = 90 },
-                                    scope:New "UIStroke" { Thickness = 4, Color = Color3.fromRGB(0, 0, 0), Transparency = 0.8, LineJoinMode = Enum.LineJoinMode.Round }, -- Subtle dark shadow 
-                                    scope:New "UIStroke" { Thickness = 3, Color = Color3.fromRGB(255, 255, 255), LineJoinMode = Enum.LineJoinMode.Round }, -- Clean white outline
+                                    scope:New "UIStroke" { Thickness = 4, Color = Color3.fromRGB(0, 0, 0), Transparency = 0, LineJoinMode = Enum.LineJoinMode.Round }, -- Strong black outline 
+                                    -- scope:New "UIStroke" { Thickness = 3, Color = Color3.fromRGB(255, 255, 255), LineJoinMode = Enum.LineJoinMode.Round }, -- Clean white outline
                                 }
                              },
                              -- "your"
@@ -390,7 +390,7 @@ function AnnouncerUI.new(props)
                                  AutomaticSize = Enum.AutomaticSize.XY,
                                  [Children] = {
 									scope:New "UIGradient" { Color = ColorSequence.new(Color3.fromRGB(255, 180, 40), Color3.fromRGB(255, 120, 0)), Rotation = 90 },
-                                    scope:New "UIStroke" { Thickness = 3, Color = Color3.fromRGB(255, 255, 255), LineJoinMode = Enum.LineJoinMode.Round }
+                                    scope:New "UIStroke" { Thickness = 3, Color = Color3.fromRGB(0, 0, 0), Transparency = 0, LineJoinMode = Enum.LineJoinMode.Round }
                                  }
                              },
                              -- "carrot!"
@@ -403,7 +403,7 @@ function AnnouncerUI.new(props)
                                  AutomaticSize = Enum.AutomaticSize.XY,
                                  [Children] = {
 									scope:New "UIGradient" { Color = ColorSequence.new(Color3.fromRGB(255, 140, 20), Color3.fromRGB(255, 80, 0)), Rotation = 90 },
-                                    scope:New "UIStroke" { Thickness = 3, Color = Color3.fromRGB(255, 255, 255), LineJoinMode = Enum.LineJoinMode.Round }
+                                    scope:New "UIStroke" { Thickness = 3, Color = Color3.fromRGB(0, 0, 0), Transparency = 0, LineJoinMode = Enum.LineJoinMode.Round }
                                  }
                              }
                         }
