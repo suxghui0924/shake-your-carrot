@@ -112,6 +112,20 @@ function Carrot:CreateKeybindHint()
     container.BackgroundTransparency = 1
     container.Parent = screen
     
+    -- [Responsive Scale]
+    local uiScale = Instance.new("UIScale")
+    uiScale.Parent = container
+    
+    local function updateScale()
+        local vp = workspace.CurrentCamera.ViewportSize
+        -- Reference height: 1080p. Min scale 0.7, Max 1.2
+        local scale = math.clamp(vp.Y / 1080, 0.7, 1.2) 
+        uiScale.Scale = scale
+    end
+    
+    updateScale()
+    workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+    
     local list = Instance.new("UIListLayout")
     list.Padding = UDim.new(0, 8)
     list.HorizontalAlignment = Enum.HorizontalAlignment.Right

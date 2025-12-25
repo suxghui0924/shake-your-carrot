@@ -55,7 +55,7 @@ function CarrotSkinUI:Init()
 	self.Scope = Fusion.scoped(Fusion)
 	
 	-- [[ STATE ]]
-	self.IsOpen = self.Scope:Value(true)
+	self.IsOpen = self.Scope:Value(false) -- Default: Closed
 	self.Tab = self.Scope:Value("Skins") -- "Skins" | "Shop"
 	
 	self.SelectedSkin = self.Scope:Value("Default")
