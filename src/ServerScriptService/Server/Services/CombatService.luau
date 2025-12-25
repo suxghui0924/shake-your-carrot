@@ -63,10 +63,8 @@ function CombatService:HandleAttack(player, attackType)
     local sizeY = 5 * carrotScale -- Reduced from 8 (was too tall)
     local sizeZ = 5 * carrotScale
     
-    -- Position: Small Gap (0.5 studs) from Character Front (approx -1)
-    -- Offset is Center of Hitbox. Back Face = Offset + SizeZ/2.
-    -- We want Back Face = -1.5. So Offset = -1.5 - SizeZ/2.
-    local offsetZ = -1.5 - (sizeZ / 2) 
+    -- Position: Closer to character (Back Face at -1.0)
+    local offsetZ = -1.0 - (sizeZ / 2) 
     
     -- [Create Hitbox Part]
     local hbPart = Instance.new("Part")
@@ -78,8 +76,8 @@ function CombatService:HandleAttack(player, attackType)
     hbPart.Transparency = 1 
     hbPart.Parent = workspace
     
-    -- Position relative to Character
-    hbPart.CFrame = character.PrimaryPart.CFrame * CFrame.new(0, 0, offsetZ)
+    -- Position relative to Character: Lowered by 1.5 studs
+    hbPart.CFrame = character.PrimaryPart.CFrame * CFrame.new(0, -1.5, offsetZ)
     
     local params = {
         SizeOrPart = hbPart,

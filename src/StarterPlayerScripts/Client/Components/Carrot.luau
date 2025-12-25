@@ -22,6 +22,11 @@ function Carrot:Construct()
     self.ChargeStartTime = 0
     self.IS_CHARGING = false
     self.LastShakeTime = 0 -- For shake animation debounce
+    
+    -- Cooldowns
+    self.ATTACK_COOLDOWN = 0.35
+    self.SHAKE_COOLDOWN = 0.5
+    self.LastShakeRequestTime = 0
 end
 
 local ContextActionService = game:GetService("ContextActionService")
@@ -204,13 +209,19 @@ function Carrot:CreateKeybindHint()
 end
 
 function Carrot:RequestShake()
+    local now = os.clock()
+    if now - self.LastShakeRequestTime < self.SHAKE_COOLDOWN then return end
+    self.LastShakeRequestTime = now
+    
     Network.packets.shakeCarrot.send()
 end
 
 function Carrot:HandleComboAttack()
     local now = os.clock()
+    if now - self.LastAttackTime < self.ATTACK_COOLDOWN then return end
+    
     if now - self.LastAttackTime > self.COMBO_TIMEOUT then
-        self.ComboStep = 1
+        self.ComboStep = 1 -- Reset combo
     else
         self.ComboStep = (self.ComboStep % 4) + 1
     end
@@ -262,7 +273,7 @@ function Carrot:PerformAttack(attackType)
 end
 
 function Carrot:OnScaleChanged()
-    local player = Players.LocalPlayer
+    local player = Players.LocalPlayer  
     local scale = player:GetAttribute("CarrotScale") or 1.0
     
     -- Debounce check
