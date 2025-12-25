@@ -58,14 +58,15 @@ function CombatService:HandleAttack(player, attackType)
     
     local carrotScale = player:GetAttribute("CarrotScale") or 1.0
     
-    -- Hitbox Dimensions (Tall and Wide per GDD)
+    -- Hitbox Dimensions (Square/Cube per user request)
     local sizeX = 5 * carrotScale
-    local sizeY = 8 * carrotScale -- Tall enough to cover jump/ground
+    local sizeY = 5 * carrotScale -- Reduced from 8 (was too tall)
     local sizeZ = 5 * carrotScale
     
-    -- Position Closer (Gap of 1 stud from RootPart)
-    -- Modified to overlap slightly (-0.5 from center) to ensure zero deadzone
-    local offsetZ = -(sizeZ / 2) - 0.5 
+    -- Position: Small Gap (0.5 studs) from Character Front (approx -1)
+    -- Offset is Center of Hitbox. Back Face = Offset + SizeZ/2.
+    -- We want Back Face = -1.5. So Offset = -1.5 - SizeZ/2.
+    local offsetZ = -1.5 - (sizeZ / 2) 
     
     -- [Create Hitbox Part]
     local hbPart = Instance.new("Part")
