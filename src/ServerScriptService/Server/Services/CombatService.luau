@@ -42,8 +42,10 @@ function CombatService:HandleAttack(player, attackType)
     if not att then
         att = Instance.new("Attachment")
         att.Name = "DmgPoint"
-        att.Position = Vector3.new(0, 0, 0) -- Center of handle? Adjust if needed.
+        att.Position = Vector3.new(0, 1, -3) -- Forward (-Z) and slightly up
         att.Parent = handle
+    else
+        att.Position = Vector3.new(0, 1, -3)
     end
     
     local carrotScale = player:GetAttribute("CarrotScale") or 1.0
@@ -51,7 +53,7 @@ function CombatService:HandleAttack(player, attackType)
     
     -- [2] Get or Create Hitbox
     local hitbox = self.Hitboxes[player]
-    if not hitbox or hitbox.Instance ~= handle then -- Recreate if weapon changed
+    if not hitbox or hitbox.Instance ~= handle then
         if hitbox then hitbox:Destroy() end
         hitbox = ShapecastHitbox.new(handle)
         self.Hitboxes[player] = hitbox
@@ -72,7 +74,11 @@ function CombatService:HandleAttack(player, attackType)
         
         if humanoid and humanoid.Health > 0 then
             local targetChar = humanoid.Parent
-            if hits[targetChar] then return end -- Already hit this enemy this swing
+            
+            -- Prevent Self-Hit
+            if targetChar == character then return end
+            
+            if hits[targetChar] then return end 
             hits[targetChar] = true
             
             local targetPlayer = Players:GetPlayerFromCharacter(targetChar)
@@ -84,29 +90,17 @@ function CombatService:HandleAttack(player, attackType)
         end
     end)
     
-    -- [5] Start & Cleanup
-    hitbox:HitStart(0.35) -- Duration of swing
+    -- [5] Start & Cleanup using RaycastParams for filtering
+    local params = RaycastParams.new()
+    params.FilterDescendantsInstances = {character}
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    
+    hitbox:HitStart(0.35, params)
     
     hitbox:OnStopped(function(cleanup)
-        cleanup() -- Removes OnHit listeners
+        cleanup() 
         table.clear(hits)
-        -- We KEEP the hitbox instance for next swing, don't Destroy() it here
     end)
-    
-    -- [VISUALIZE HITBOX (Debug/Feedback)]
-    -- Keeping the visualizer as User requested it, but maybe ShapecastHitbox has one?
-    -- User asked for "Visualize" previously. I'll keep the simple Box for now as instant feedback,
-    -- though it might not perfectly match the temporal cast.
-    -- Actually, ShapecastHitbox usually has `ShapecastHitbox.Settings.Debug_Visible = true` but that's global.
-    -- Let's stick to our own feedback for now or rely on the purely invisible mechanic if reliable.
-    -- I will comment out the old One-shot raycast but keep the visual feedback part for 'feel'.
-    
-    -- [VISUALIZE HITBOX]
-    -- User requested visualization. We are enabling the native Debug Mode in Init.
-    -- Manual visualization removed to avoid clutter.
-    
-    local origin = character.PrimaryPart.Position
-    local direction = character.PrimaryPart.CFrame.LookVector * (8 * carrotScale)
     
     -- Lunge
     local lungeForce = 15 * carrotScale
