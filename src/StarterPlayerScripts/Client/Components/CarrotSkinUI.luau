@@ -130,6 +130,26 @@ function CarrotSkinUI:Init()
 			self:CreateMainWindow(),
 		}
 	}
+
+	-- [[ SHOP PROMPT INTERACTION ]]
+	task.spawn(function()
+		local prompts = workspace:WaitForChild("Prompts", 10)
+		if not prompts then return end
+		
+		local carrots = prompts:WaitForChild("Carrots", 10)
+		if not carrots then return end
+		
+		-- Wait for the prompt
+		local prompt = carrots:WaitForChild("ProximityPrompt", 10) 
+		if prompt and prompt:IsA("ProximityPrompt") then
+			self._trove:Connect(prompt.Triggered, function(triggerPlayer)
+				if triggerPlayer == player then
+					self.Tab:set("Shop")
+					self.IsOpen:set(true)
+				end
+			end)
+		end
+	end)
 end
 
 -- [[ COMPONENT: Profile HUD (Bottom Left) ]]
