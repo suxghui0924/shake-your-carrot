@@ -55,22 +55,19 @@ function CombatService:HandleAttack(player, attackType)
     -- [Create Hitbox Part]
     local hbPart = Instance.new("Part")
     hbPart.Name = "Hitbox_" .. player.Name
-    hbPart.Size = Vector3.new(hitRadius, hitRadius, hitRadius) -- Cube approximation or just use for positioning?
-    -- If using "InPart" (default if part passed), the part's shape matters.
-    hbPart.Shape = Enum.PartType.Ball
+    hbPart.Size = Vector3.new(hitRadius, hitRadius, hitRadius) -- Square/Cube
+    hbPart.Shape = Enum.PartType.Block -- "Square" (Cube) as requested
     hbPart.CanCollide = false
     hbPart.Massless = true
-    hbPart.Transparency = 1 -- Debug = true will handle visuals, or we make it 1
+    hbPart.Transparency = 1 
     hbPart.Parent = workspace
-    -- Position it initially at the character to avoid flying in from 0,0,0?
+    -- Position in front of CHARACTER
     hbPart.CFrame = character.PrimaryPart.CFrame * CFrame.new(0, 0, offsetZ)
     
     local params = {
         SizeOrPart = hbPart,
-        Debug = true, -- User requested visualization
-        DebounceTime = 0.5, -- Prevent hitting same target multiple times per swing
-        -- Blacklist? "A blacklist that'll be used to exclude certain things".
-        -- We can blacklist the caster.
+        Debug = true, 
+        DebounceTime = 0.5,
         Blacklist = {character},
     }
     

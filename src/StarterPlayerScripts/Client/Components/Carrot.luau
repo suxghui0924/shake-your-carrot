@@ -345,10 +345,7 @@ function Carrot:PlayGrowthVisuals()
     -- 2. Particle Burst
     self:PlayGrowthParticles()
     
-    -- 3. Camera Shake
-    self:PlayCameraShake()
-    
-    -- 4. Floating Text
+    -- 3. Floating Text
     self:SpawnFloatingText()
 end
 
@@ -377,40 +374,7 @@ function Carrot:PlayGrowthParticles()
     Debris:AddItem(att, 2)
 end
 
-function Carrot:PlayCameraShake()
-    local camera = workspace.CurrentCamera
-    local duration = 0.15
-    local intensity = 0.8
-    
-    -- Simple coroutine shake
-    task.spawn(function()
-        local startTime = os.clock()
-        while os.clock() - startTime < duration do
-            local dx = (math.random() - 0.5) * intensity
-            local dy = (math.random() - 0.5) * intensity
-            local dz = (math.random() - 0.5) * intensity
-            
-            -- We offset the camera slightly. 
-            -- Note: A proper CameraShaker module is better, but this works for instant juice.
-            -- Be careful not to override standard control scripts. 
-            -- modifying CoordinateFrame relative to itself might drift.
-            
-            -- Safer approach: Apply impulse if Humanoid? No. 
-            -- Humanoid.CameraOffset is safer.
-            local humanoid = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("Humanoid")
-            if humanoid then
-                humanoid.CameraOffset = Vector3.new(dx, dy, dz)
-            end
-            
-            task.wait()
-        end
-        -- Reset
-        local humanoid = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("Humanoid")
-        if humanoid then
-            humanoid.CameraOffset = Vector3.new(0, 0, 0)
-        end
-    end)
-end
+
 
 function Carrot:SpawnFloatingText()
     local character = Players.LocalPlayer.Character

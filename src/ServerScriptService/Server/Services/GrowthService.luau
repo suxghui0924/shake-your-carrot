@@ -74,10 +74,8 @@ function GrowthService:GrowCarrot(player)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if not humanoid then return end
 	
-	-- Calculate max scale: player's height (HipHeight is roughly the character height)
-	-- Default character height is around 5-6 studs, so max scale = player height
-	local playerHeight = humanoid.HipHeight + 2 -- Add 2 for torso/head
-	local maxScale = playerHeight -- Carrot can grow up to player's height
+	-- Increase Max Scale Limit significantly
+	local maxScale = 20.0
 	
 	-- Reduced growth rate: 1% per shake (was 5%)
 	local nextScale = currentScale * 1.01
