@@ -1,4 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 
 local Packages = ReplicatedStorage.Packages
 local Fusion = require(Packages.Fusion)
@@ -28,6 +29,10 @@ function AnnouncerUI.new(props)
     -- Splash Screen State
     local splashTransparency = scope:Value(1)
     local splashString = scope:Spring(splashTransparency, 30, 1)
+	
+	-- Splash Animation Values (Scale/Rotation)
+	local splashScale = scope:Spring(scope:Value(0), 12, 0.6) -- Bouncy scale
+	local splashRotation = scope:Value(0)
     
     -- Observe message for "GO!" to trigger splash
     local messageObserver = scope:Observer(message)
@@ -35,7 +40,12 @@ function AnnouncerUI.new(props)
         if peek(message) == "GO!" then
             -- Reset to visible instantly (or fade in fast)
             splashTransparency:set(0)
-            
+			
+			-- Trigger Pop-in animation
+			splashScale:setPosition(0) -- Reset
+			splashScale:setVelocity(5) --- Force pop
+			splashScale:setTarget(1)
+			
             -- Wait for teleport to happen (approx 2s in server) + extra time
             task.delay(4, function()
                 splashTransparency:set(1)
@@ -54,7 +64,7 @@ function AnnouncerUI.new(props)
         IgnoreGuiInset = true, 
         
         [Children] = {
-            -- Main Game UI Container
+            -- Main Game UI Container (Timer/Status)
             scope:New "Frame" {
                 Name = "Container",
                 Size = UDim2.new(1, 0, 0.2, 0),
@@ -152,87 +162,128 @@ function AnnouncerUI.new(props)
                 }
             },
 			
-			-- RANKING BOARD (Bottom Layer)
+			-- PREMIUM RANKING BOARD (Bottom Layer)
 			scope:New "Frame" {
 				Name = "RankingBoard",
-                Size = UDim2.fromScale(0.6, 0.6),
+                Size = UDim2.fromScale(0.5, 0.6),
                 Position = UDim2.fromScale(0.5, 0.5),
                 AnchorPoint = Vector2.new(0.5, 0.5),
-                BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-				BackgroundTransparency = 0.3,
+                BackgroundColor3 = Color3.fromRGB(30, 30, 35),
+				BackgroundTransparency = 0.1,
 				Visible = scope:Computed(function(use)
 					return use(stats) ~= nil
 				end),
 				
 				[Children] = {
-					scope:New "UICorner" { CornerRadius = UDim.new(0, 10) },
+					scope:New "UICorner" { CornerRadius = UDim.new(0, 15) },
+					scope:New "UIStroke" { Thickness = 2, Color = Color3.fromRGB(255, 255, 255), Transparency = 0.8 },
+					scope:New "UIPadding" { PaddingTop = UDim.new(0, 20), PaddingBottom = UDim.new(0, 20), PaddingLeft = UDim.new(0, 20), PaddingRight = UDim.new(0, 20) },
+					
 					scope:New "UIListLayout" {
                         SortOrder = Enum.SortOrder.LayoutOrder,
                         HorizontalAlignment = Enum.HorizontalAlignment.Center,
                         VerticalAlignment = Enum.VerticalAlignment.Top,
-                        Padding = UDim.new(0, 10) 
+                        Padding = UDim.new(0, 15) 
                     },
-					scope:New "UIPadding" { PaddingTop = UDim.new(0, 20), PaddingBottom = UDim.new(0, 20) },
 					
 					-- Header
 					scope:New "TextLabel" {
 						LayoutOrder = 1,
 						Text = "GAME OVER",
 						Font = Enum.Font.FredokaOne,
-						TextSize = 48,
-						TextColor3 = Color3.fromRGB(255, 50, 50),
+						TextSize = 42,
+						TextColor3 = Color3.fromRGB(250, 250, 250),
 						BackgroundTransparency = 1,
-						Size = UDim2.new(1, 0, 0, 60),
+						Size = UDim2.new(1, 0, 0, 50),
 						[Children] = {
-                            scope:New "UIStroke" {
-                                Thickness = 3,
-                                Color = Color3.fromRGB(0, 0, 0)
-                            }
+							scope:New "UIStroke" { Thickness = 2, Color = Color3.fromRGB(255, 100, 100) },
+							scope:New "UIGradient" {
+								Color = ColorSequence.new({
+									ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+									ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 200, 200))
+								}),
+								Rotation = 90
+							}
                         }
 					},
 					
-					-- Stats Header
+					-- Column Headers
 					scope:New "Frame" {
 						LayoutOrder = 2,
-						Size = UDim2.new(0.9, 0, 0, 30),
+						Size = UDim2.new(1, 0, 0, 30),
 						BackgroundTransparency = 1,
 						[Children] = {
-							scope:New "UIListLayout" { FillDirection = Enum.FillDirection.Horizontal },
-							scope:New "TextLabel" { Text = "Player", Size = UDim2.fromScale(0.6, 1), BackgroundTransparency = 1, TextColor3 = Color3.new(1,1,1), Font = Enum.Font.FredokaOne, TextSize = 20 },
-							scope:New "TextLabel" { Text = "Kills", Size = UDim2.fromScale(0.2, 1), BackgroundTransparency = 1, TextColor3 = Color3.new(1,1,1), Font = Enum.Font.FredokaOne, TextSize = 20 },
-							scope:New "TextLabel" { Text = "Deaths", Size = UDim2.fromScale(0.2, 1), BackgroundTransparency = 1, TextColor3 = Color3.new(1,1,1), Font = Enum.Font.FredokaOne, TextSize = 20 },
+							scope:New "UIListLayout" { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 10) },
+							scope:New "TextLabel" { Text = "Player", Size = UDim2.new(0.5, 0, 1, 0), BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(150, 150, 150), Font = Enum.Font.GothamBold, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left },
+							scope:New "TextLabel" { Text = "Kills", Size = UDim2.new(0.2, 0, 1, 0), BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(150, 150, 150), Font = Enum.Font.GothamBold, TextSize = 14 },
+							scope:New "TextLabel" { Text = "Deaths", Size = UDim2.new(0.2, 0, 1, 0), BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(150, 150, 150), Font = Enum.Font.GothamBold, TextSize = 14 },
 						}
 					},
 					
 					-- List
 					scope:New "ScrollingFrame" {
 						LayoutOrder = 3,
-						Size = UDim2.new(0.9, 0, 0.7, 0),
+						Size = UDim2.new(1, 0, 0.7, 0),
 						BackgroundTransparency = 1,
 						CanvasSize = UDim2.new(0, 0, 0, 0), 
 						AutomaticCanvasSize = Enum.AutomaticSize.Y,
-						ScrollBarThickness = 6,
+						ScrollBarThickness = 4,
+						ScrollBarImageColor3 = Color3.fromRGB(200, 200, 200),
 						
 						[Children] = {
 							scope:New "UIListLayout" {
 								SortOrder = Enum.SortOrder.LayoutOrder,
 								HorizontalAlignment = Enum.HorizontalAlignment.Center,
-								Padding = UDim.new(0, 5)
+								Padding = UDim.new(0, 8)
 							},
 							
 							ForValues(scope, scope:Computed(function(use)
 								return use(stats) or {}
 							end), function(use, scope, item)
+								
+								local isFirst = item.Rank == 1 or item == (use(stats) or {})[1] -- Assuming sorted
+								local bgColor = isFirst and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(50, 50, 55)
+								local textColor = isFirst and Color3.fromRGB(50, 50, 50) or Color3.fromRGB(255, 255, 255)
+								
 								return scope:New "Frame" {
-									Size = UDim2.new(1, 0, 0, 40),
-									BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-									BackgroundTransparency = 0.9,
+									Name = "Card",
+									Size = UDim2.new(1, -10, 0, 50),
+									BackgroundColor3 = bgColor,
+									BackgroundTransparency = 0,
+									
 									[Children] = {
-										scope:New "UICorner" { CornerRadius = UDim.new(0, 5) },
-										scope:New "UIListLayout" { FillDirection = Enum.FillDirection.Horizontal },
-										scope:New "TextLabel" { Text = item.Name, Size = UDim2.fromScale(0.6, 1), BackgroundTransparency = 1, TextColor3 = Color3.new(1,1,1), Font = Enum.Font.FredokaOne, TextSize = 18 },
-										scope:New "TextLabel" { Text = tostring(item.Kills), Size = UDim2.fromScale(0.2, 1), BackgroundTransparency = 1, TextColor3 = Color3.new(1,1,1), Font = Enum.Font.FredokaOne, TextSize = 18 },
-										scope:New "TextLabel" { Text = tostring(item.Deaths), Size = UDim2.fromScale(0.2, 1), BackgroundTransparency = 1, TextColor3 = Color3.new(1,1,1), Font = Enum.Font.FredokaOne, TextSize = 18 },
+										scope:New "UICorner" { CornerRadius = UDim.new(0, 8) },
+										scope:New "UIStroke" { Thickness = 1, Color = Color3.fromRGB(255, 255, 255), Transparency = isFirst and 0 or 0.8 },
+										scope:New "UIPadding" { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) },
+										
+										scope:New "UIListLayout" { FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 10) },
+										
+										-- Avatar
+										scope:New "ImageLabel" {
+											Size = UDim2.new(0, 30, 0, 30),
+											BackgroundColor3 = Color3.fromRGB(200, 200, 200),
+											BackgroundTransparency = 0.5,
+											Image = "rbxthumb://type=AvatarHeadShot&id=" .. (item.UserId or 0) .. "&w=150&h=150",
+											[Children] = { scope:New "UICorner" { CornerRadius = UDim.new(1, 0) } }
+										},
+										
+										-- Name
+										scope:New "TextLabel" { 
+											Text = item.Name, 
+											Size = UDim2.new(0.5, -40, 1, 0), 
+											BackgroundTransparency = 1, 
+											TextColor3 = textColor, 
+											Font = Enum.Font.GothamBold, 
+											TextSize = 16, 
+											TextXAlignment = Enum.TextXAlignment.Left,
+											TextTruncate = Enum.TextTruncate.AtEnd
+										},
+										
+										-- Kills
+										scope:New "TextLabel" { Text = tostring(item.Kills), Size = UDim2.new(0.2, 0, 1, 0), BackgroundTransparency = 1, TextColor3 = textColor, Font = Enum.Font.FredokaOne, TextSize = 18 },
+										
+										-- Deaths
+										scope:New "TextLabel" { Text = tostring(item.Deaths), Size = UDim2.new(0.2, 0, 1, 0), BackgroundTransparency = 1, TextColor3 = textColor, Font = Enum.Font.FredokaOne, TextSize = 18 },
 									}
 								}
 							end)
@@ -245,64 +296,75 @@ function AnnouncerUI.new(props)
             scope:New "CanvasGroup" {
                 Name = "SplashScreen",
                 Size = UDim2.fromScale(1, 1),
-                BackgroundColor3 = Color3.new(1, 1, 1), -- White background or customized? User didn't specify BG, but fades usually involve a cover.
-                -- Let's make it a nice radial gradient or just simple color.
-                -- User image has "Shake Your Carrot" text. Let's assume white or light BG looks clean.
+                BackgroundColor3 = Color3.new(1, 1, 1), 
                 BackgroundTransparency = 0, -- Controlled by GroupTransparency
                 
                 -- Opacity Control
                 [Children] = {
                      scope:New "UIGradient" {
                         Color = ColorSequence.new({
-                            ColorSequenceKeypoint.new(0, Color3.fromRGB(240, 212, 172)),
+                            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 245, 230)),
                             ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
                         }),
                         Rotation = 45
                      },
                      
-                     scope:New "UIListLayout" {
-                        HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                        VerticalAlignment = Enum.VerticalAlignment.Center,
-                        Padding = UDim.new(0, -10) -- Stack tight
-                     },
-                     
-                     -- "shake"
-                     scope:New "TextLabel" {
-                        Text = "shake",
-                        Font = Enum.Font.FredokaOne,
-                        TextSize = 80,
-                        TextColor3 = Color3.fromRGB(255, 140, 0), -- Orange
+                     -- Centered Content
+                     scope:New "Frame" {
+                        Size = UDim2.fromScale(1, 1),
                         BackgroundTransparency = 1,
-                        AutomaticSize = Enum.AutomaticSize.XY,
+                        
                         [Children] = {
-                            scope:New "UIStroke" { Thickness = 4, Color = Color3.fromRGB(255, 255, 255) }, -- White outline
-                            -- Inner shadow or 2nd stroke workaround not easy in Fusion single stroke?
-                            -- We can just do one thick white outline.
+                             scope:New "UIListLayout" {
+                                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                                VerticalAlignment = Enum.VerticalAlignment.Center,
+                                Padding = UDim.new(0, -15) -- Overlap slightly for bubbly feel
+                             },
+							 
+							 -- Scale Wrapper
+							 scope:New "UIScale" { Scale = splashScale },
+                             
+                             -- "shake"
+                             scope:New "TextLabel" {
+                                Text = "shake",
+                                Font = Enum.Font.FredokaOne,
+                                TextSize = 100,
+                                TextColor3 = Color3.fromRGB(255, 255, 255), 
+                                BackgroundTransparency = 1,
+                                AutomaticSize = Enum.AutomaticSize.XY,
+                                [Children] = {
+									scope:New "UIGradient" { Color = ColorSequence.new(Color3.fromRGB(255, 180, 50), Color3.fromRGB(255, 100, 0)), Rotation = 90 },
+                                    scope:New "UIStroke" { Thickness = 6, Color = Color3.fromRGB(255, 255, 255), LineJoinMode = Enum.LineJoinMode.Round }, 
+									scope:New "UIStroke" { Thickness = 12, Color = Color3.fromRGB(255, 140, 0), Transparency = 0.5, LineJoinMode = Enum.LineJoinMode.Round } -- Outer glow fake
+                                }
+                             },
+                             -- "your"
+                             scope:New "TextLabel" {
+                                Text = "your",
+                                Font = Enum.Font.FredokaOne,
+                                TextSize = 90,
+                                TextColor3 = Color3.fromRGB(255, 255, 255),
+                                BackgroundTransparency = 1,
+                                 AutomaticSize = Enum.AutomaticSize.XY,
+                                 [Children] = {
+									scope:New "UIGradient" { Color = ColorSequence.new(Color3.fromRGB(255, 200, 80), Color3.fromRGB(255, 120, 0)), Rotation = 90 },
+                                    scope:New "UIStroke" { Thickness = 6, Color = Color3.fromRGB(255, 255, 255), LineJoinMode = Enum.LineJoinMode.Round }
+                                 }
+                             },
+                             -- "carrot!"
+                             scope:New "TextLabel" {
+                                Text = "carrot!",
+                                Font = Enum.Font.FredokaOne,
+                                TextSize = 110,
+                                TextColor3 = Color3.fromRGB(255, 255, 255),
+                                BackgroundTransparency = 1,
+                                 AutomaticSize = Enum.AutomaticSize.XY,
+                                 [Children] = {
+									scope:New "UIGradient" { Color = ColorSequence.new(Color3.fromRGB(255, 160, 40), Color3.fromRGB(255, 80, 0)), Rotation = 90 },
+                                    scope:New "UIStroke" { Thickness = 6, Color = Color3.fromRGB(255, 255, 255), LineJoinMode = Enum.LineJoinMode.Round }
+                                 }
+                             }
                         }
-                     },
-                     -- "your"
-                     scope:New "TextLabel" {
-                        Text = "your",
-                        Font = Enum.Font.FredokaOne,
-                        TextSize = 80,
-                        TextColor3 = Color3.fromRGB(255, 140, 0),
-                        BackgroundTransparency = 1,
-                         AutomaticSize = Enum.AutomaticSize.XY,
-                         [Children] = {
-                            scope:New "UIStroke" { Thickness = 4, Color = Color3.fromRGB(255, 255, 255) }
-                         }
-                     },
-                     -- "carrot!"
-                     scope:New "TextLabel" {
-                        Text = "carrot!",
-                        Font = Enum.Font.FredokaOne,
-                        TextSize = 80,
-                        TextColor3 = Color3.fromRGB(255, 140, 0),
-                        BackgroundTransparency = 1,
-                         AutomaticSize = Enum.AutomaticSize.XY,
-                         [Children] = {
-                            scope:New "UIStroke" { Thickness = 4, Color = Color3.fromRGB(255, 255, 255) }
-                         }
                      }
                 },
                 
