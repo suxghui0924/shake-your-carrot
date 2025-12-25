@@ -38,8 +38,8 @@ function AnnouncerUI.new(props)
                     -- Main Message (e.g., "Round Starts in...")
                     scope:New "TextLabel" {
                         Name = "MainText",
-                        Size = UDim2.new(1, 0, 0.5, 0),
-                        Position = UDim2.fromScale(0.5, 0.2),
+                        Size = UDim2.new(1, 0, 0.4, 0),
+                        Position = UDim2.fromScale(0.5, 0.35),
                         AnchorPoint = Vector2.new(0.5, 0.5),
                         BackgroundTransparency = 1,
                         Text = scope:Computed(function(use)
@@ -75,7 +75,7 @@ function AnnouncerUI.new(props)
                     scope:New "TextLabel" {
                         Name = "TimerText",
                         Size = UDim2.new(1, 0, 0.5, 0),
-                        Position = UDim2.fromScale(0.5, 0.6),
+                        Position = UDim2.fromScale(0.5, 0.65),
                         AnchorPoint = Vector2.new(0.5, 0.5),
                         BackgroundTransparency = 1,
                         Text = scope:Computed(function(use)

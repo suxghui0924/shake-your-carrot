@@ -60,6 +60,7 @@ function CarrotSkinUI:Init()
 	self.Coins = self.Scope:Value(player:GetAttribute("Money") or 0)
 	self.Health = self.Scope:Value(player.Character and player.Character:GetAttribute("Health") or 100)
 	self.MaxHealth = self.Scope:Value(player.Character and player.Character:GetAttribute("MaxHealth") or 100)
+	self.CarrotScale = self.Scope:Value(player:GetAttribute("CarrotScale") or 1.0)
 	
 	-- Animations
 	self.PreviewRotation = self.Scope:Value(0)
@@ -76,6 +77,7 @@ function CarrotSkinUI:Init()
 		if attr == "EquippedSkin" then self.EquippedSkin:set(player:GetAttribute("EquippedSkin"))
 		elseif attr == "Money" then self.Coins:set(player:GetAttribute("Money"))
 		elseif attr == "UnlockedSkins" then self.UnlockedSkins:set(player:GetAttribute("UnlockedSkins"))
+		elseif attr == "CarrotScale" then self.CarrotScale:set(player:GetAttribute("CarrotScale"))
 		end
 	end)
 	
@@ -131,52 +133,98 @@ end
 function CarrotSkinUI:CreateProfileHUD(player)
 	return self.Scope:New "Frame" {
 		Name = "ProfileHUD",
-		Size = UDim2.fromOffset(300, 100),
+		Size = UDim2.fromOffset(300, 110),
 		Position = UDim2.new(0, 20, 1, -20),
 		AnchorPoint = Vector2.new(0, 1),
 		BackgroundTransparency = 1,
 		[Children] = {
-			-- Main Pill
+			-- Main Pill (Background)
 			self.Scope:New "Frame" {
-				Size = UDim2.new(1, -50, 0, 70),
-				Position = UDim2.fromOffset(50, 15),
+				Size = UDim2.new(1, -40, 0, 85),
+				Position = UDim2.fromOffset(40, 10),
 				BackgroundColor3 = Color3.fromRGB(30, 30, 35),
+				BackgroundTransparency = 0.1,
 				[Children] = {
-					self.Scope:New "UICorner" { CornerRadius = UDim.new(0, 35) },
+					self.Scope:New "UICorner" { CornerRadius = UDim.new(0, 20) },
 					self.Scope:New "UIStroke" { Color = Color3.fromRGB(60, 60, 70), Thickness = 2 },
 					
-					-- Info
+					-- Info Container
 					self.Scope:New "Frame" {
-						Size = UDim2.new(1, -60, 1, 0),
-						Position = UDim2.fromOffset(50, 0),
+						Size = UDim2.new(1, -60, 1, -10),
+						Position = UDim2.fromOffset(55, 5),
 						BackgroundTransparency = 1,
 						[Children] = {
-							self.Scope:New "UIListLayout" { Padding = UDim.new(0, 5), VerticalAlignment = Enum.VerticalAlignment.Center },
+							self.Scope:New "UIListLayout" { Padding = UDim.new(0, 2), VerticalAlignment = Enum.VerticalAlignment.Center },
 							
+							-- Name
 							self.Scope:New "TextLabel" {
 								Text = player.DisplayName,
 								Font = Enum.Font.FredokaOne,
-								TextSize = 20,
+								TextSize = 18,
 								TextColor3 = THEME.TEXT_MAIN,
 								Size = UDim2.new(1, 0, 0, 20),
 								BackgroundTransparency = 1,
 								TextXAlignment = Enum.TextXAlignment.Left,
+								TextTruncate = Enum.TextTruncate.AtEnd,
 							},
 							
-							self.Scope:New "Frame" { -- Coins
+							-- Coins
+							self.Scope:New "Frame" {
 								Size = UDim2.new(1, 0, 0, 24),
 								BackgroundTransparency = 1,
 								[Children] = {
 									self.Scope:New "UIListLayout" { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 5), VerticalAlignment = Enum.VerticalAlignment.Center },
-									self.Scope:New "TextLabel" { Text = "💰", TextSize = 20, BackgroundTransparency = 1, Size = UDim2.fromOffset(24,24) },
+									self.Scope:New "TextLabel" { Text = "💰", TextSize = 18, BackgroundTransparency = 1, Size = UDim2.fromOffset(20,20) },
 									self.Scope:New "TextLabel" {
-										Text = self.Scope:Computed(function(use) return string.format("%d", use(self.Coins)) end), -- Format number
+										Text = self.Scope:Computed(function(use) return string.format("%d", use(self.Coins)) end), 
 										Font = Enum.Font.FredokaOne,
-										TextSize = 22,
+										TextSize = 20,
 										TextColor3 = THEME.ACCENT_GOLD,
 										Size = UDim2.fromOffset(0, 24),
 										AutomaticSize = Enum.AutomaticSize.X,
 										BackgroundTransparency = 1,
+									}
+								}
+							},
+
+							-- Spacer
+							self.Scope:New "Frame" { Size = UDim2.new(1,0,0,4), BackgroundTransparency = 1 },
+
+							-- Growth Level (Text + Bar)
+							self.Scope:New "Frame" {
+								Size = UDim2.new(1, 0, 0, 16),
+								BackgroundTransparency = 1,
+								[Children] = {
+									self.Scope:New "UIListLayout" { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0,8), VerticalAlignment = Enum.VerticalAlignment.Center },
+									
+									-- "x 1.0"
+									self.Scope:New "TextLabel" {
+										Text = self.Scope:Computed(function(use) return string.format("x%.1f", use(self.CarrotScale)) end),
+										Font = Enum.Font.FredokaOne,
+										TextSize = 16,
+										TextColor3 = THEME.ACCENT_ORANGE,
+										Size = UDim2.new(0, 40, 1, 0),
+                                        TextXAlignment = Enum.TextXAlignment.Left,
+										BackgroundTransparency = 1,
+									},
+									
+									-- Bar Background
+									self.Scope:New "Frame" {
+										Size = UDim2.new(0.6, 0, 0, 8),
+										BackgroundColor3 = Color3.fromRGB(50, 50, 60),
+										[Children] = {
+											self.Scope:New "UICorner" { CornerRadius = UDim.new(1, 0) },
+											-- Fill
+											self.Scope:New "Frame" {
+												Size = self.Scope:Computed(function(use)
+													local scale = use(self.CarrotScale)
+													local progress = math.clamp((scale - 1) / 4, 0, 1)
+													return UDim2.fromScale(progress, 1)
+												end),
+												BackgroundColor3 = THEME.ACCENT_ORANGE,
+												[Children] = { self.Scope:New "UICorner" { CornerRadius = UDim.new(1, 0) } }
+											}
+										}
 									}
 								}
 							}
@@ -185,10 +233,10 @@ function CarrotSkinUI:CreateProfileHUD(player)
 				}
 			},
 			
-			-- Health Bar
+			-- Health Bar (Attached to bottom)
 			self.Scope:New "Frame" {
-				Size = UDim2.new(0.7, 0, 0, 8),
-				Position = UDim2.new(0.3, 0, 1, -5),
+				Size = UDim2.new(0.6, 0, 0, 6),
+				Position = UDim2.new(0.4, 0, 1, -2),
 				AnchorPoint = Vector2.new(0, 1),
 				BackgroundColor3 = Color3.fromRGB(50, 10, 10),
 				[Children] = {
@@ -203,9 +251,9 @@ function CarrotSkinUI:CreateProfileHUD(player)
 				}
 			},
 			
-			-- Avatar
+			-- Avatar Box (Circle)
 			self.Scope:New "ImageLabel" {
-				Size = UDim2.fromOffset(90, 90),
+				Size = UDim2.fromOffset(80, 80),
 				Position = UDim2.new(0, 0, 0.5, 0),
 				AnchorPoint = Vector2.new(0, 0.5),
 				BackgroundColor3 = THEME.BG_PANEL,
