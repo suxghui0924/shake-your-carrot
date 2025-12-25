@@ -12,6 +12,9 @@ local CombatService = {
 }
 
 function CombatService:Init()
+    -- Enable Debug Visualization for feedback
+    ShapecastHitbox.Settings.Debug_Visible = true
+
     Network.packets.carrotAttack.listen(function(data, player)
         self:HandleAttack(player, data.attackType)
     end)
@@ -98,25 +101,16 @@ function CombatService:HandleAttack(player, attackType)
     -- Let's stick to our own feedback for now or rely on the purely invisible mechanic if reliable.
     -- I will comment out the old One-shot raycast but keep the visual feedback part for 'feel'.
     
+    -- [VISUALIZE HITBOX]
+    -- User requested visualization. We are enabling the native Debug Mode in Init.
+    -- Manual visualization removed to avoid clutter.
+    
     local origin = character.PrimaryPart.Position
     local direction = character.PrimaryPart.CFrame.LookVector * (8 * carrotScale)
     
     -- Lunge
     local lungeForce = 15 * carrotScale
     character.PrimaryPart:ApplyImpulse(character.PrimaryPart.CFrame.LookVector * lungeForce * character.PrimaryPart.AssemblyMass)
-    
-    -- Old Visualizer (Red Box) logic
-    local viz = Instance.new("Part")
-    viz.Anchored = true
-    viz.CanCollide = false
-    viz.Material = Enum.Material.Neon
-    viz.Color = Color3.fromRGB(255, 0, 0)
-    viz.Transparency = 0.8
-    viz.Shape = Enum.PartType.Block
-    viz.Size = Vector3.new(hitRadius*2, hitRadius*2, direction.Magnitude)
-    viz.CFrame = CFrame.lookAt(origin + direction/2, origin + direction)
-    viz.Parent = workspace
-    game:GetService("Debris"):AddItem(viz, 0.2)
 end
 
 function CombatService:ApplyDamage(attacker, targetHumanoid, scale, attackType)
