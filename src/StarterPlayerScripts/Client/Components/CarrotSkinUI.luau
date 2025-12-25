@@ -236,6 +236,10 @@ function CarrotSkinUI:CreateProfileHUD(player)
 	}
 end
 
+local function Spring(scope, goal, speed, damping)
+    return scope:Spring(goal, speed or 20, damping or 0.8)
+end
+
 -- [[ COMPONENT: Side Buttons (Skins / Shop) ]]
 function CarrotSkinUI:CreateSideButtons()
 	return self.Scope:New "Frame" {
@@ -261,14 +265,30 @@ function CarrotSkinUI:CreateSideButtons()
 end
 
 function CarrotSkinUI:CreateCircleButton(icon, label, onClick)
+    local isHovering = self.Scope:Value(false)
+    local springScale = Spring(self.Scope, self.Scope:Computed(function(use) return use(isHovering) and 1.1 or 1.0 end))
+    
 	return self.Scope:New "TextButton" {
 		Size = UDim2.fromOffset(80, 80),
 		BackgroundColor3 = THEME.BG_SEC,
 		Text = "",
 		[Fusion.OnEvent "Activated"] = onClick,
+        [Fusion.OnEvent "MouseEnter"] = function() isHovering:set(true) end,
+        [Fusion.OnEvent "MouseLeave"] = function() isHovering:set(false) end,
 		[Children] = {
+            self.Scope:New "UIScale" { Scale = springScale },
 			self.Scope:New "UICorner" { CornerRadius = UDim.new(0, 20) }, -- Squircle
-			self.Scope:New "UIStroke" { Color = THEME.ACCENT_ORANGE, Thickness = 2, Transparency = 0 },
+			self.Scope:New "UIStroke" { 
+                Color = Color3.fromRGB(255,255,255), 
+                Thickness = 2, 
+                Transparency = 0,
+                [Children] = {
+                    self.Scope:New "UIGradient" { Color = ColorSequence.new({
+                        ColorSequenceKeypoint.new(0, THEME.ACCENT_ORANGE),
+                        ColorSequenceKeypoint.new(1, THEME.ACCENT_GOLD)
+                    }), Rotation = 45 }
+                }
+            },
 			
 			self.Scope:New "TextLabel" {
 				Text = icon,
@@ -451,6 +471,10 @@ function CarrotSkinUI:CreateSkinCard(id, skin)
 	local isEquipped = self.Scope:Computed(function(use) return use(self.EquippedSkin) == id end)
 	
 	local rarityColor = RARITY_COLORS[skin.Rarity] or Color3.new(1,1,1)
+
+    -- Hover Animation
+    local isHovering = self.Scope:Value(false)
+    local springScale = Spring(self.Scope, self.Scope:Computed(function(use) return use(isHovering) and 1.05 or 1.0 end))
 	
 	return self.Scope:New "TextButton" {
 		Text = "",
@@ -458,7 +482,10 @@ function CarrotSkinUI:CreateSkinCard(id, skin)
 		[Fusion.OnEvent "Activated"] = function()
 			self.SelectedSkin:set(id)
 		end,
+        [Fusion.OnEvent "MouseEnter"] = function() isHovering:set(true) end,
+        [Fusion.OnEvent "MouseLeave"] = function() isHovering:set(false) end,
 		[Children] = {
+            self.Scope:New "UIScale" { Scale = springScale },
 			self.Scope:New "UICorner" { CornerRadius = UDim.new(0, 8) },
 			self.Scope:New "UIStroke" {
 				Color = self.Scope:Computed(function(use) return use(isEquipped) and THEME.ACCENT_GREEN or rarityColor end),
@@ -503,6 +530,10 @@ function CarrotSkinUI:CreateSkinCard(id, skin)
 end
 
 function CarrotSkinUI:CreateInspectorContent()
+    -- Action Button Hover State
+    local isHoveringAction = self.Scope:Value(false)
+    local actionScale = Spring(self.Scope, self.Scope:Computed(function(use) return use(isHoveringAction) and 1.05 or 1.0 end))
+
 	return {
 		self.Scope:New "UIPadding" { PaddingTop = UDim.new(0,10), PaddingBottom = UDim.new(0,10), PaddingLeft = UDim.new(0,10), PaddingRight = UDim.new(0,10) },
 		self.Scope:New "UIListLayout" { Padding = UDim.new(0, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center },
@@ -581,10 +612,9 @@ function CarrotSkinUI:CreateInspectorContent()
 			Font = Enum.Font.FredokaOne,
 			TextSize = 20,
 			TextColor3 = Color3.new(1,1,1),
-			[Children] = {
-				self.Scope:New "UICorner" { CornerRadius = UDim.new(0, 8) },
-			},
-			[Fusion.OnEvent "Activated"] = function()
+            [Fusion.OnEvent "MouseEnter"] = function() isHoveringAction:set(true) end,
+            [Fusion.OnEvent "MouseLeave"] = function() isHoveringAction:set(false) end,
+            [Fusion.OnEvent "Activated"] = function()
 				local id = peek(self.SelectedSkin)
 				local unlocked = table.find(peek(self.UnlockedSkins), id) or id == "Default"
 				if unlocked then
@@ -592,7 +622,12 @@ function CarrotSkinUI:CreateInspectorContent()
 				else
 					Network.packets.buySkin.send({ skinId = id })
 				end
-			end
+			end,
+			[Children] = {
+                self.Scope:New "UIScale" { Scale = actionScale },
+				self.Scope:New "UICorner" { CornerRadius = UDim.new(0, 8) },
+                self.Scope:New "UIStroke" { Color = Color3.new(1,1,1), Thickness = 2, Transparency = 0.5 },
+			},
 		}
 	}
 end
