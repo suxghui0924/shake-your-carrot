@@ -44,6 +44,11 @@ function RunController:Init()
 		self:Update()
 	end)
 	
+	-- Listen for Growth Changes
+	player:GetAttributeChangedSignal("CarrotScale"):Connect(function()
+		self:UpdateSpeed()
+	end)
+	
 	print("[RunController] Init completed")
 end
 
@@ -63,22 +68,35 @@ function RunController:OnCharacterAdded(char)
 		warn("[RunController] Run animation not found in ReplicatedStorage.Assets.Animations")
 	end
 	
-	self:SetRunning(isRunning) -- Re-apply state if respawned while holding key? (Edge case)
+	self:UpdateSpeed() -- Apply initial speed
 end
 
 function RunController:SetRunning(state)
 	isRunning = state
-	if not humanoid then return end
+	self:UpdateSpeed()
 	
-	if isRunning then
-		humanoid.WalkSpeed = RUN_SPEED
-	else
-		humanoid.WalkSpeed = WALK_SPEED
+	if not isRunning then
 		-- Stop animation immediately if we stop running key
 		if runAnimationTrack and runAnimationTrack.IsPlaying then
 			runAnimationTrack:Stop(0.2)
 		end
 	end
+end
+
+function RunController:UpdateSpeed()
+	if not humanoid then return end
+	
+	local scale = player:GetAttribute("CarrotScale") or 1.0
+	local baseSpeed = isRunning and RUN_SPEED or WALK_SPEED
+	
+	-- Speed Penalty: -2.5 speed per 1.0 scale increase above 1
+	-- Formula matches GrowthService original (or adjusted for feel)
+	local penalty = math.max(0, (scale - 1.0) * 2.5)
+	
+	-- Ensure random minimum speed (e.g. 8) so they don't stop completely
+	local finalSpeed = math.max(8, baseSpeed - penalty)
+	
+	humanoid.WalkSpeed = finalSpeed
 end
 
 function RunController:Update()

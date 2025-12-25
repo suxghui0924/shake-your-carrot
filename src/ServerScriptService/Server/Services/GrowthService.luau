@@ -99,12 +99,13 @@ function GrowthService:ApplyScale(player, scale)
     player:SetAttribute("CarrotScale", scale)
     
     -- Update WalkSpeed (Speed Penalty: Base 16, -1 speed per 0.4 scale above 1.0)
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        local baseSpeed = 16
-        local penalty = (scale - 1.0) * 2.5 -- 0.4 increase = 1 point penalty
-        humanoid.WalkSpeed = math.max(10, baseSpeed - penalty)
-    end
+    -- [MOVED TO CLIENT] RunController handles speed to allow sprinting + penalty
+    -- local humanoid = character:FindFirstChildOfClass("Humanoid")
+    -- if humanoid then
+    --     local baseSpeed = 16
+    --     local penalty = (scale - 1.0) * 2.5 -- 0.4 increase = 1 point penalty
+    --     humanoid.WalkSpeed = math.max(10, baseSpeed - penalty)
+    -- end
 
     -- Sync scale to all tagged "Carrot" tools owned by the player
     local taggedTools = CollectionService:GetTagged("Carrot")

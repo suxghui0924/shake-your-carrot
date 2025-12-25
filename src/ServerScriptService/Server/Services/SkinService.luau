@@ -69,15 +69,8 @@ function SkinService:OnPlayerAdded(player)
 		local HttpService = game:GetService("HttpService")
 
 		-- Set initial attributes for UI
-		player:SetAttribute("EquippedSkin", profileData.EquippedSkin)
-		player:SetAttribute("Money", profileData.Money)
-		
-		-- Attributes don't support tables, so we MUST JSON encode it
-		local func, err = pcall(function()
-			local json = HttpService:JSONEncode(profileData.UnlockedSkins)
-			player:SetAttribute("UnlockedSkins", json)
-		end)
-		if not func then warn("Failed to encode UnlockedSkins:", err) end
+		-- Set initial attributes for UI
+		self:UpdateAttributes(player, profileData)
 		
 		-- print("[SkinService] Data loaded for:", player.Name, "Skin:", profileData.EquippedSkin)
 
@@ -116,8 +109,9 @@ function SkinService:EquipSkin(player, skinId)
 	end
 	
 	-- Update equipped skin
+	-- Update equipped skin
 	profileData.EquippedSkin = skinId
-	player:SetAttribute("EquippedSkin", skinId)
+	self:UpdateAttributes(player, profileData)
 	
 	-- Apply to all current tools
 	self:ApplySkinToPlayerTools(player)
@@ -155,9 +149,21 @@ function SkinService:BuySkin(player, skinId)
 	table.insert(profileData.UnlockedSkins, skinId)
 	
 	-- Update attributes
-	player:SetAttribute("Money", profileData.Money)
+	self:UpdateAttributes(player, profileData)
 	
 	-- print("Player", player.Name, "bought skin", skinId, "for", price, "coins")
+end
+
+function SkinService:UpdateAttributes(player, profileData)
+	player:SetAttribute("Money", profileData.Money)
+	player:SetAttribute("EquippedSkin", profileData.EquippedSkin)
+	
+	local HttpService = game:GetService("HttpService")
+	local func, err = pcall(function()
+		local json = HttpService:JSONEncode(profileData.UnlockedSkins)
+		player:SetAttribute("UnlockedSkins", json)
+	end)
+	if not func then warn("Failed to encode UnlockedSkins:", err) end
 end
 
 function SkinService:ApplySkinToPlayerTools(player)

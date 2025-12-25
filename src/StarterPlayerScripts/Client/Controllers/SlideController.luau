@@ -49,29 +49,13 @@ rayParams.FilterType = Enum.RaycastFilterType.Exclude
 --// Assets
 local Assets = ReplicatedStorage:WaitForChild("Assets")
 local Animations = Assets:WaitForChild("Animations")
-local SoundsFolder = ReplicatedStorage:WaitForChild("Sounds", 5) -- Look for Sounds folder
+local SoundsFolder = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Sounds", 5)
 
 local slideLoopSound = nil
 local slideCancelSound = nil
 local baseVolume = 1
 
 function SlideController:Init()
-	-- Load Sounds
-	if SoundsFolder then
-		local loop = SoundsFolder:FindFirstChild("Slide_Loop")
-		if loop then 
-			slideLoopSound = loop:Clone()
-			slideLoopSound.Parent = rootPart or player.Character or script
-			baseVolume = slideLoopSound.Volume
-		end
-		
-		local cancel = SoundsFolder:FindFirstChild("Slide_Cancel")
-		if cancel then
-			slideCancelSound = cancel:Clone()
-			slideCancelSound.Parent = rootPart or player.Character or script
-		end
-	end
-
 	player.CharacterAdded:Connect(function(char)
 		self:OnCharacterAdded(char)
 	end)
@@ -94,19 +78,54 @@ function SlideController:Init()
 end
 
 function SlideController:OnCharacterAdded(char)
+	self:StopSlide() -- Safety cleanup of previous state
+	
+	-- Explicitly destroy old sounds if they still exist (orphaned)
+	if slideLoopSound then 
+		slideLoopSound:Stop()
+		slideLoopSound:Destroy()
+		slideLoopSound = nil 
+	end
+	if slideCancelSound then 
+		slideCancelSound:Destroy()
+		slideCancelSound = nil 
+	end
+	
 	character = char
 	humanoid = char:WaitForChild("Humanoid")
 	rootPart = char:WaitForChild("HumanoidRootPart")
 	animator = humanoid:WaitForChild("Animator")
 	
-	-- Re-parent sounds to new character root if they exist
-	if slideLoopSound then slideLoopSound.Parent = rootPart end
-	if slideCancelSound then slideCancelSound.Parent = rootPart end
-	
 	rayParams.FilterDescendantsInstances = {character}
 	
+	-- Create NEW Sound instances for this character
+	if SoundsFolder then
+		local loop = SoundsFolder:FindFirstChild("Slide_Loop")
+		if loop then 
+			slideLoopSound = loop:Clone()
+			slideLoopSound.Name = "SlideLoop"
+			slideLoopSound.Looped = true -- Force Loop
+			slideLoopSound.Parent = rootPart
+			baseVolume = slideLoopSound.Volume
+			print("[SlideController] SlideLoop sound loaded. Vol:", baseVolume)
+		else
+			warn("[SlideController] Slide_Loop sound NOT found in Assets/Sounds")
+		end
+		
+		local cancel = SoundsFolder:FindFirstChild("Slide_Cancel")
+		if cancel then
+			slideCancelSound = cancel:Clone()
+			slideCancelSound.Name = "SlideCancel"
+			slideCancelSound.Parent = rootPart
+			print("[SlideController] SlideCancel sound loaded.")
+		else
+			warn("[SlideController] Slide_Cancel sound NOT found in Assets/Sounds")
+		end
+	else
+		warn("[SlideController] Assets/Sounds folder NOT found")
+	end
+	
 	-- Load Animation
-	-- Expecting "Slide" animation in ReplicatedStorage.Assets.Animations
 	local anim = Animations:FindFirstChild("Slide")
 	if anim and anim:IsA("Animation") then
 		slideAnimTrack = animator:LoadAnimation(anim)
@@ -137,6 +156,7 @@ function SlideController:StartSlide()
 	-- Play Sound
 	if slideLoopSound then
 		slideLoopSound:Play()
+		print("[SlideController] Playing Slide Loop")
 	end
 	
 	humanoid.HipHeight = Settings.HipHeight.Slide
@@ -159,7 +179,8 @@ function SlideController:StartSlide()
 	
 	-- Heartbeat Loop
 	posCheckConnection = RunService.Heartbeat:Connect(function(dt)
-		if not isSliding or not rootPart or not slideVelocity then 
+		-- Safety check: Stop if something key is missing
+		if not isSliding or not rootPart or not rootPart.Parent or not slideVelocity then 
 			self:StopSlide() 
 			return 
 		end
@@ -202,7 +223,7 @@ function SlideController:StartSlide()
 end
 
 function SlideController:StopSlide()
-	if not isSliding then return end
+	-- Removed: if not isSliding then return end (Force cleanup always)
 	isSliding = false
 	
 	if posCheckConnection then
@@ -214,6 +235,13 @@ function SlideController:StopSlide()
 	if alignGyro then alignGyro:Destroy() end
 	
 	if slideAnimTrack then slideAnimTrack:Stop(0.2) end
+	
+	-- Force Stop Sound logic
+	if slideLoopSound then 
+		slideLoopSound:Stop() 
+		-- print("[SlideController] Stopped Slide Sound")
+	end
+	
 	if humanoid then humanoid.HipHeight = Settings.HipHeight.Normal end
 	
 	task.delay(Settings.Cooldown, function()
@@ -222,7 +250,11 @@ function SlideController:StopSlide()
 end
 
 function SlideController:CancelSlide()
-	-- Jump Cancel logic
+	-- Play Cancel Sound
+	if slideCancelSound then
+		slideCancelSound:Play()
+	end
+	
 	self:StopSlide()
 	
 	if Settings.PushOnCancel and rootPart then

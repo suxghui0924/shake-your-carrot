@@ -10,8 +10,8 @@ local GrowthService = require(script.Parent.GrowthService)
 local RoundService = {
     CurrentState = "Intermission",
     TimeLeft = 0,
-    IntermissionDuration = 10,
-    RoundDuration = 60,
+    IntermissionDuration = 30,
+    RoundDuration = 120,
     Running = false,
 }
 
