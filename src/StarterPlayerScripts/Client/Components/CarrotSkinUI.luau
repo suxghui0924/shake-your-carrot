@@ -95,6 +95,27 @@ function CarrotSkinUI:Init()
 		end
 	end)
 
+	-- [[ RESPONSIVE STATE ]]
+	local camera = workspace.CurrentCamera
+	self.ViewportSize = self.Scope:Value(camera.ViewportSize)
+	self.UIScale = self.Scope:Computed(function(use)
+		local size = use(self.ViewportSize)
+		-- Reference height: 1080p. 
+		-- Scale factor: minimal 0.6 (mobile), max 1.2 (large screens)
+		-- Logic: Scale based on height to keep elements readable
+		local scale = math.clamp(size.Y / 1080, 0.6, 1.1)
+		
+		-- On very small width (portrait mobile), scale down further if needed to fit width
+		if size.X < 800 then
+			scale = math.min(scale, size.X / 1000)
+		end
+		return scale
+	end)
+	
+	self._trove:Connect(camera:GetPropertyChangedSignal("ViewportSize"), function()
+		self.ViewportSize:set(camera.ViewportSize)
+	end)
+
 	-- [[ GUI CONSTRUCTION ]]
 	self.ScreenGui = self.Scope:New "ScreenGui" {
 		Name = "CarrotUI_V2",
@@ -103,6 +124,7 @@ function CarrotSkinUI:Init()
 		Parent = player:WaitForChild("PlayerGui"),
 		
 		[Children] = {
+			self.Scope:New "UIScale" { Scale = self.UIScale },
 			self:CreateProfileHUD(player),
 			self:CreateSideButtons(),
 			self:CreateMainWindow(),
@@ -114,8 +136,8 @@ end
 function CarrotSkinUI:CreateProfileHUD(player)
 	return self.Scope:New "Frame" {
 		Name = "ProfileHUD",
-		Size = UDim2.fromOffset(280, 90),
-		Position = UDim2.new(0, 20, 1, -20),
+		Size = UDim2.fromOffset(320, 100), -- Slightly Increased Size
+		Position = UDim2.new(0, 30, 1, -30), -- Adjusted margin for scale
 		AnchorPoint = Vector2.new(0, 1),
 		BackgroundTransparency = 1,
 		
@@ -126,13 +148,13 @@ function CarrotSkinUI:CreateProfileHUD(player)
 				BackgroundColor3 = Color3.fromRGB(10, 10, 12),
 				BackgroundTransparency = 0.3,
 				[Children] = {
-					self.Scope:New "UICorner" { CornerRadius = UDim.new(0, 16) },
+					self.Scope:New "UICorner" { CornerRadius = UDim.new(0, 20) }, -- Larger Corner
 					self.Scope:New "UIStroke" { Color = Color3.fromRGB(255, 255, 255), Transparency = 0.9, Thickness = 1 },
 					
 					-- Avatar Circle (Overhanging left)
 					self.Scope:New "ImageLabel" {
-						Size = UDim2.fromOffset(70, 70),
-						Position = UDim2.new(0, 10, 0.5, 0),
+						Size = UDim2.fromOffset(80, 80), -- Increased Avatar
+						Position = UDim2.new(0, 12, 0.5, 0),
 						AnchorPoint = Vector2.new(0, 0.5),
 						BackgroundColor3 = THEME.BG_SEC,
 						Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150),
@@ -187,7 +209,7 @@ function CarrotSkinUI:CreateProfileHUD(player)
 									
 									-- Bar
 									self.Scope:New "Frame" {
-										Size = UDim2.new(1, -40, 0, 8),
+										Size = UDim2.new(1, -45, 0, 10), -- Thicker bar
 										BackgroundColor3 = Color3.fromRGB(0,0,0),
 										BackgroundTransparency = 0.5,
 										[Children] = {
@@ -196,8 +218,9 @@ function CarrotSkinUI:CreateProfileHUD(player)
 												BackgroundColor3 = THEME.ACCENT_ORANGE,
 												Size = self.Scope:Computed(function(use)
 													local s = use(self.CarrotScale)
-													local warm = math.clamp((s-1)/4, 0, 1)
-													return UDim2.fromScale(warm, 1)
+													-- Max scale is 3.0, Base is 1.0. Range is 2.0.
+													local progress = math.clamp((s - 1) / 2, 0, 1)
+													return UDim2.fromScale(progress, 1)
 												end),
 												[Children] = { self.Scope:New "UICorner" { CornerRadius = UDim.new(1,0) } }
 											}
@@ -271,13 +294,17 @@ end
 function CarrotSkinUI:CreateMainWindow()
 	return self.Scope:New "Frame" {
 		Name = "MainWindow",
-		Size = UDim2.fromOffset(900, 600),
+		Size = UDim2.fromScale(0.85, 0.8), -- Adaptive Size
 		Position = UDim2.fromScale(0.5, 0.5),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Visible = self.IsOpen,
 		BackgroundTransparency = 1,
 		
 		[Children] = {
+			-- Constraints to prevent it looking weird on ultra-wide or tiny screens
+			self.Scope:New "UISizeConstraint" { MaxSize = Vector2.new(1100, 750), MinSize = Vector2.new(600, 400) },
+			self.Scope:New "UIAspectRatioConstraint" { AspectRatio = 1.5, DominantAxis = Enum.DominantAxis.Height, AspectType = Enum.AspectType.FitWithinMaxSize },
+			
 			-- Main Card
 			self.Scope:New "Frame" {
 				Size = UDim2.fromScale(1, 1),
