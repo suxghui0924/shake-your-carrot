@@ -493,15 +493,8 @@ function CarrotSkinUI:CreateSkinCard(id, skin)
 				Transparency = self.Scope:Computed(function(use) return use(isUnlocked) and 0 or 0.5 end)
 			},
 			
-			-- Icon/Preview Image (Could be ViewportFrame or Image, using Text for now)
-			self.Scope:New "TextLabel" {
-				Text = "🥕",
-				TextSize = 40,
-				Position = UDim2.fromScale(0.5, 0.4),
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				BackgroundTransparency = 1,
-				TextTransparency = self.Scope:Computed(function(use) return use(isUnlocked) and 0 or 0.7 end)
-			},
+			-- Icon/Preview Image (3D Viewport)
+            self:CreateMiniViewport(id),
 			
 			-- Labels
 			self.Scope:New "TextLabel" {
@@ -630,6 +623,91 @@ function CarrotSkinUI:CreateInspectorContent()
 			},
 		}
 	}
+end
+
+function CarrotSkinUI:CreateMiniViewport(id)
+	local skin = CarrotSkins[id]
+	if not skin then return nil end
+
+	local world = Instance.new("WorldModel")
+	local cam = Instance.new("Camera")
+	cam.FieldOfView = 50
+	
+	local vp = self.Scope:New "ViewportFrame" {
+		Size = UDim2.fromScale(0.9, 0.9), -- Large enough to fill crop
+		Position = UDim2.fromScale(0.5, 0.4),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		BackgroundTransparency = 1,
+		CurrentCamera = cam,
+		Ambient = Color3.fromRGB(200, 200, 200),
+		LightColor = Color3.fromRGB(255, 255, 255),
+		LightDirection = Vector3.new(-1, 1, 1),
+		[Children] = { world }
+	}
+	
+	-- Async load/setup
+	task.defer(function()
+		local function getAssetFromPath(path)
+			local segments = string.split(path, ".")
+			local current = game
+			for _, segment in ipairs(segments) do
+				current = current:FindFirstChild(segment)
+				if not current then return nil end
+			end
+			return current
+		end
+
+		local asset = getAssetFromPath(skin.AssetPath)
+		if not asset then
+			local folder = ReplicatedStorage:FindFirstChild("Assets") and ReplicatedStorage.Assets:FindFirstChild("Carrots")
+			if folder then asset = folder:FindFirstChild(skin.Name) end
+		end
+		
+		if asset then
+			asset = asset:Clone()
+			asset.Parent = world
+			
+			local min = Vector3.new(math.huge, math.huge, math.huge)
+			local max = Vector3.new(-math.huge, -math.huge, -math.huge)
+			
+			for _, d in ipairs(asset:GetDescendants()) do
+				if d:IsA("BasePart") then
+					d.Anchored = true
+					local size = d.Size
+					local cf = d.CFrame
+					local corners = {
+						cf * Vector3.new(size.X/2, size.Y/2, size.Z/2),
+						cf * Vector3.new(size.X/2, size.Y/2, -size.Z/2),
+						cf * Vector3.new(size.X/2, -size.Y/2, size.Z/2),
+						cf * Vector3.new(size.X/2, -size.Y/2, -size.Z/2),
+						cf * Vector3.new(-size.X/2, size.Y/2, size.Z/2),
+						cf * Vector3.new(-size.X/2, size.Y/2, -size.Z/2),
+						cf * Vector3.new(-size.X/2, -size.Y/2, size.Z/2),
+						cf * Vector3.new(-size.X/2, -size.Y/2, -size.Z/2),
+					}
+					for _, c in ipairs(corners) do
+						min = Vector3.new(math.min(min.X, c.X), math.min(min.Y, c.Y), math.min(min.Z, c.Z))
+						max = Vector3.new(math.max(max.X, c.X), math.max(max.Y, c.Y), math.max(max.Z, c.Z))
+					end
+				end
+			end
+			
+			local center = (min + max) / 2
+			local size = max - min
+			local dist = math.max(size.Magnitude, 3) * 1.0
+
+			local rot = CFrame.Angles(0, math.rad(30), 0)
+			local tilt = CFrame.Angles(math.rad(-15), 0, 0)
+			
+			for _, d in ipairs(asset:GetDescendants()) do
+				if d:IsA("BasePart") then d.CFrame = d.CFrame - center end
+			end
+			
+			cam.CFrame = CFrame.new(0, 0, 0) * rot * tilt * CFrame.new(0, 0, dist)
+		end
+	end)
+	
+	return vp
 end
 
 function CarrotSkinUI:CreateViewport()
