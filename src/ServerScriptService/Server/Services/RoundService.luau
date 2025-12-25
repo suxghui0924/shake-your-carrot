@@ -15,10 +15,7 @@ local RoundService = {
     Running = false,
 }
 
-function RoundService:Init()
-    -- Initialize listeners if any
-    self:Start()
-end
+
 
 function RoundService:Start()
     if self.Running then return end
@@ -121,6 +118,8 @@ function RoundService:StartRound()
 		aliveFolder.Name = "Alive"
 		aliveFolder.Parent = workspace
 	end
+	
+	self.CurrentMapSpawnCFrame = chosenMapCFrame
 
 	-- Teleport Players
 	for _, player in ipairs(Players:GetPlayers()) do
@@ -150,6 +149,46 @@ function RoundService:StartRound()
 			end
 		end)
 	end
+end
+
+function RoundService:OnPlayerAdded(player)
+	player.CharacterAdded:Connect(function(character)
+		if self.CurrentState == "Round" and self.CurrentMapSpawnCFrame then
+			-- Handle Respawn Logic during Round
+			task.spawn(function()
+				task.wait() -- Wait for character initialization
+				
+				local aliveFolder = workspace:FindFirstChild("Alive")
+				if aliveFolder then
+					character.Parent = aliveFolder
+				end
+				
+				local hrp = character:WaitForChild("HumanoidRootPart", 5)
+				if hrp then
+					task.wait(0.1) -- extra safety
+					hrp.CFrame = self.CurrentMapSpawnCFrame
+					
+					-- Anchor momentarily
+					hrp.Anchored = true
+					task.wait(2)
+					if hrp then hrp.Anchored = false end
+				end
+			end)
+		end
+	end)
+end
+
+function RoundService:Init()
+	-- Initialize listeners if any
+	Players.PlayerAdded:Connect(function(player)
+		self:OnPlayerAdded(player)
+	end)
+	
+	for _, player in ipairs(Players:GetPlayers()) do
+		self:OnPlayerAdded(player)
+	end
+	
+	self:Start()
 end
 
 function RoundService:EndRound()
