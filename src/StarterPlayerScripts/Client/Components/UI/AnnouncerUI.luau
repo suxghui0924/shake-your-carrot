@@ -10,6 +10,10 @@ local Value = Fusion.Value
 local Tween = Fusion.Tween
 local Spring = Fusion.Spring
 
+local ForValues = Fusion.ForValues
+local Observer = Fusion.Observer
+local peek = Fusion.peek
+
 local AnnouncerUI = {}
 
 function AnnouncerUI.new(props)
@@ -17,17 +21,40 @@ function AnnouncerUI.new(props)
     local status = props.status
     local timeLeft = props.timeLeft
     local message = props.message
+    local stats = props.stats
     
     local parent = props.Parent
+    
+    -- Splash Screen State
+    local splashTransparency = scope:Value(1)
+    local splashString = scope:Spring(splashTransparency, 30, 1)
+    
+    -- Observe message for "GO!" to trigger splash
+    local messageObserver = scope:Observer(message)
+    local disconnectObserver = messageObserver:onChange(function()
+        if peek(message) == "GO!" then
+            -- Reset to visible instantly (or fade in fast)
+            splashTransparency:set(0)
+            
+            -- Wait for teleport to happen (approx 2s in server) + extra time
+            task.delay(4, function()
+                splashTransparency:set(1)
+            end)
+        end
+    end)
+    
+    -- Cleanup observer on destroy (if scope handles it, great, but let's be safe if we could)
+    table.insert(scope, disconnectObserver)
     
     local gui = scope:New "ScreenGui" {
         Name = "AnnouncerUI",
         Parent = parent,
         ResetOnSpawn = false,
-        DisplayOrder = 100, -- High priority to be on top
-        IgnoreGuiInset = true, -- User requested: Very top
+        DisplayOrder = 1000, -- Highest priority
+        IgnoreGuiInset = true, 
         
         [Children] = {
+            -- Main Game UI Container
             scope:New "Frame" {
                 Name = "Container",
                 Size = UDim2.new(1, 0, 0.2, 0),
@@ -36,15 +63,15 @@ function AnnouncerUI.new(props)
                 BackgroundTransparency = 1,
                 
                 [Children] = {
-                    scope:New "UIPadding" { PaddingTop = UDim.new(0, 10) }, -- Slight padding from edge
+                    scope:New "UIPadding" { PaddingTop = UDim.new(0, 10) }, 
                     scope:New "UIListLayout" {
                         SortOrder = Enum.SortOrder.LayoutOrder,
                         HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                        VerticalAlignment = Enum.VerticalAlignment.Top, -- Align to top
-                        Padding = UDim.new(0, 5) -- Fixed 5px gap
+                        VerticalAlignment = Enum.VerticalAlignment.Top, 
+                        Padding = UDim.new(0, 5)
                     },
 
-                    -- Main Message (e.g., "Round Starts in...")
+                    -- Main Message
                     scope:New "TextLabel" {
                         Name = "MainText",
                         LayoutOrder = 1,
@@ -55,6 +82,8 @@ function AnnouncerUI.new(props)
                             local s = use(status)
                             local t = use(timeLeft)
                             local m = use(message)
+                            
+                            if m == "GO!" then return "" end -- Hide "GO!" text if splash is showing
                             
                             if m and m ~= "" then
                                 return m
@@ -71,6 +100,10 @@ function AnnouncerUI.new(props)
                         Font = Enum.Font.FredokaOne,
                         TextSize = 32,
                         TextStrokeTransparency = 0.5,
+                        Visible = scope:Computed(function(use)
+							-- Hide during ranking
+							return use(stats) == nil
+						end),
                         
                         [Children] = {
                             scope:New "UIStroke" {
@@ -80,7 +113,7 @@ function AnnouncerUI.new(props)
                         }
                     },
                     
-                    -- Timer / Emphasis Text
+                    -- Timer
                     scope:New "TextLabel" {
                         Name = "TimerText",
                         LayoutOrder = 2,
@@ -98,13 +131,16 @@ function AnnouncerUI.new(props)
                         TextColor3 = scope:Computed(function(use)
                             local t = use(timeLeft)
                             if t <= 5 then
-                                return Color3.fromRGB(255, 50, 50) -- Red alert
+                                return Color3.fromRGB(255, 50, 50) 
                             end
-                            return Color3.fromRGB(255, 200, 50) -- Normal Gold-ish
+                            return Color3.fromRGB(255, 200, 50) 
                         end),
                         Font = Enum.Font.FredokaOne,
                         TextSize = 32,
                         TextStrokeTransparency = 0,
+						Visible = scope:Computed(function(use)
+							return use(stats) == nil
+						end),
                         
                         [Children] = {
                             scope:New "UIStroke" {
@@ -114,6 +150,167 @@ function AnnouncerUI.new(props)
                         }
                     }
                 }
+            },
+			
+			-- RANKING BOARD (Bottom Layer)
+			scope:New "Frame" {
+				Name = "RankingBoard",
+                Size = UDim2.fromScale(0.6, 0.6),
+                Position = UDim2.fromScale(0.5, 0.5),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+				BackgroundTransparency = 0.3,
+				Visible = scope:Computed(function(use)
+					return use(stats) ~= nil
+				end),
+				
+				[Children] = {
+					scope:New "UICorner" { CornerRadius = UDim.new(0, 10) },
+					scope:New "UIListLayout" {
+                        SortOrder = Enum.SortOrder.LayoutOrder,
+                        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                        VerticalAlignment = Enum.VerticalAlignment.Top,
+                        Padding = UDim.new(0, 10) 
+                    },
+					scope:New "UIPadding" { PaddingTop = UDim.new(0, 20), PaddingBottom = UDim.new(0, 20) },
+					
+					-- Header
+					scope:New "TextLabel" {
+						LayoutOrder = 1,
+						Text = "GAME OVER",
+						Font = Enum.Font.FredokaOne,
+						TextSize = 48,
+						TextColor3 = Color3.fromRGB(255, 50, 50),
+						BackgroundTransparency = 1,
+						Size = UDim2.new(1, 0, 0, 60),
+						[Children] = {
+                            scope:New "UIStroke" {
+                                Thickness = 3,
+                                Color = Color3.fromRGB(0, 0, 0)
+                            }
+                        }
+					},
+					
+					-- Stats Header
+					scope:New "Frame" {
+						LayoutOrder = 2,
+						Size = UDim2.new(0.9, 0, 0, 30),
+						BackgroundTransparency = 1,
+						[Children] = {
+							scope:New "UIListLayout" { FillDirection = Enum.FillDirection.Horizontal },
+							scope:New "TextLabel" { Text = "Player", Size = UDim2.fromScale(0.6, 1), BackgroundTransparency = 1, TextColor3 = Color3.new(1,1,1), Font = Enum.Font.FredokaOne, TextSize = 20 },
+							scope:New "TextLabel" { Text = "Kills", Size = UDim2.fromScale(0.2, 1), BackgroundTransparency = 1, TextColor3 = Color3.new(1,1,1), Font = Enum.Font.FredokaOne, TextSize = 20 },
+							scope:New "TextLabel" { Text = "Deaths", Size = UDim2.fromScale(0.2, 1), BackgroundTransparency = 1, TextColor3 = Color3.new(1,1,1), Font = Enum.Font.FredokaOne, TextSize = 20 },
+						}
+					},
+					
+					-- List
+					scope:New "ScrollingFrame" {
+						LayoutOrder = 3,
+						Size = UDim2.new(0.9, 0, 0.7, 0),
+						BackgroundTransparency = 1,
+						CanvasSize = UDim2.new(0, 0, 0, 0), 
+						AutomaticCanvasSize = Enum.AutomaticSize.Y,
+						ScrollBarThickness = 6,
+						
+						[Children] = {
+							scope:New "UIListLayout" {
+								SortOrder = Enum.SortOrder.LayoutOrder,
+								HorizontalAlignment = Enum.HorizontalAlignment.Center,
+								Padding = UDim.new(0, 5)
+							},
+							
+							ForValues(scope, scope:Computed(function(use)
+								return use(stats) or {}
+							end), function(use, scope, item)
+								return scope:New "Frame" {
+									Size = UDim2.new(1, 0, 0, 40),
+									BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+									BackgroundTransparency = 0.9,
+									[Children] = {
+										scope:New "UICorner" { CornerRadius = UDim.new(0, 5) },
+										scope:New "UIListLayout" { FillDirection = Enum.FillDirection.Horizontal },
+										scope:New "TextLabel" { Text = item.Name, Size = UDim2.fromScale(0.6, 1), BackgroundTransparency = 1, TextColor3 = Color3.new(1,1,1), Font = Enum.Font.FredokaOne, TextSize = 18 },
+										scope:New "TextLabel" { Text = tostring(item.Kills), Size = UDim2.fromScale(0.2, 1), BackgroundTransparency = 1, TextColor3 = Color3.new(1,1,1), Font = Enum.Font.FredokaOne, TextSize = 18 },
+										scope:New "TextLabel" { Text = tostring(item.Deaths), Size = UDim2.fromScale(0.2, 1), BackgroundTransparency = 1, TextColor3 = Color3.new(1,1,1), Font = Enum.Font.FredokaOne, TextSize = 18 },
+									}
+								}
+							end)
+						}
+					}
+				}
+			},
+            
+            -- SPLASH SCREEN (Top Layer)
+            scope:New "CanvasGroup" {
+                Name = "SplashScreen",
+                Size = UDim2.fromScale(1, 1),
+                BackgroundColor3 = Color3.new(1, 1, 1), -- White background or customized? User didn't specify BG, but fades usually involve a cover.
+                -- Let's make it a nice radial gradient or just simple color.
+                -- User image has "Shake Your Carrot" text. Let's assume white or light BG looks clean.
+                BackgroundTransparency = 0, -- Controlled by GroupTransparency
+                
+                -- Opacity Control
+                [Children] = {
+                     scope:New "UIGradient" {
+                        Color = ColorSequence.new({
+                            ColorSequenceKeypoint.new(0, Color3.fromRGB(240, 212, 172)),
+                            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+                        }),
+                        Rotation = 45
+                     },
+                     
+                     scope:New "UIListLayout" {
+                        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                        VerticalAlignment = Enum.VerticalAlignment.Center,
+                        Padding = UDim.new(0, -10) -- Stack tight
+                     },
+                     
+                     -- "shake"
+                     scope:New "TextLabel" {
+                        Text = "shake",
+                        Font = Enum.Font.FredokaOne,
+                        TextSize = 80,
+                        TextColor3 = Color3.fromRGB(255, 140, 0), -- Orange
+                        BackgroundTransparency = 1,
+                        AutomaticSize = Enum.AutomaticSize.XY,
+                        [Children] = {
+                            scope:New "UIStroke" { Thickness = 4, Color = Color3.fromRGB(255, 255, 255) }, -- White outline
+                            -- Inner shadow or 2nd stroke workaround not easy in Fusion single stroke?
+                            -- We can just do one thick white outline.
+                        }
+                     },
+                     -- "your"
+                     scope:New "TextLabel" {
+                        Text = "your",
+                        Font = Enum.Font.FredokaOne,
+                        TextSize = 80,
+                        TextColor3 = Color3.fromRGB(255, 140, 0),
+                        BackgroundTransparency = 1,
+                         AutomaticSize = Enum.AutomaticSize.XY,
+                         [Children] = {
+                            scope:New "UIStroke" { Thickness = 4, Color = Color3.fromRGB(255, 255, 255) }
+                         }
+                     },
+                     -- "carrot!"
+                     scope:New "TextLabel" {
+                        Text = "carrot!",
+                        Font = Enum.Font.FredokaOne,
+                        TextSize = 80,
+                        TextColor3 = Color3.fromRGB(255, 140, 0),
+                        BackgroundTransparency = 1,
+                         AutomaticSize = Enum.AutomaticSize.XY,
+                         [Children] = {
+                            scope:New "UIStroke" { Thickness = 4, Color = Color3.fromRGB(255, 255, 255) }
+                         }
+                     }
+                },
+                
+                -- Bind Transparency to Spring
+                GroupTransparency = splashString,
+                Visible = scope:Computed(function(use)
+                    return use(splashString) < 1 -- Hide when fully transparent
+                end)
             }
         }
     }

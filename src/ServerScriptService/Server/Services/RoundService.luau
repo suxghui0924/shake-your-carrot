@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
 
 local Network = require(ReplicatedStorage.Shared.Network)
 -- Attempt to get GrowthService; assuming it's a module in the same directory or accessible via _G if lazy loaded.
@@ -10,9 +11,10 @@ local GrowthService = require(script.Parent.GrowthService)
 local RoundService = {
     CurrentState = "Intermission",
     TimeLeft = 0,
-    IntermissionDuration = 30,
-    RoundDuration = 120,
+    IntermissionDuration = 5,
+    RoundDuration = 10,
     Running = false,
+	RoundStats = {}, -- [UserId] = { Name = "", Kills = 0, Deaths = 0 }
 }
 
 
@@ -60,17 +62,23 @@ function RoundService:SetState(state, duration)
     self:BroadcastStatus()
 end
 
-function RoundService:BroadcastStatus(message)
+function RoundService:BroadcastStatus(message, stats)
     -- Send to all players
     Network.packets.roundStatusUpdate.sendToAll({
         status = self.CurrentState,
         timeLeft = self.TimeLeft,
-        message = message
+        message = message,
+		stats = stats
     })
 end
 
 function RoundService:StartRound()
 	-- print("Round Starting!")
+	self.RoundStats = {}
+    for _, player in ipairs(Players:GetPlayers()) do
+        self.RoundStats[player.UserId] = { Name = player.Name, Kills = 0, Deaths = 0 }
+    end
+	
 	self:BroadcastStatus("GO!")
 
 	-- Clean/Setup Map Folder
@@ -153,6 +161,30 @@ end
 
 function RoundService:OnPlayerAdded(player)
 	player.CharacterAdded:Connect(function(character)
+		-- Connect Death Listener for Kill Tracking
+		local humanoid = character:WaitForChild("Humanoid", 10)
+		if humanoid then
+			humanoid.Died:Connect(function()
+				if self.CurrentState == "Round" then
+					-- Record Death
+					if not self.RoundStats[player.UserId] then
+						self.RoundStats[player.UserId] = { Name = player.Name, Kills = 0, Deaths = 0 }
+					end
+					self.RoundStats[player.UserId].Deaths += 1
+					
+					-- Check for Killer
+					local creator = humanoid:FindFirstChild("creator")
+					if creator and creator.Value and creator.Value:IsA("Player") then
+						local killer = creator.Value
+						if not self.RoundStats[killer.UserId] then
+							self.RoundStats[killer.UserId] = { Name = killer.Name, Kills = 0, Deaths = 0 }
+						end
+						self.RoundStats[killer.UserId].Kills += 1
+					end
+				end
+			end)
+		end
+		
 		if self.CurrentState == "Round" and self.CurrentMapSpawnCFrame then
 			-- Handle Respawn Logic during Round
 			task.spawn(function()
@@ -193,20 +225,65 @@ end
 
 function RoundService:EndRound()
 	-- print("Round Ended!")
-	self:BroadcastStatus("Time's Up!")
+	
+	-- Compile Stats
+	local statsList = {}
+	for _, data in pairs(self.RoundStats) do
+		table.insert(statsList, data)
+	end
+	table.sort(statsList, function(a,b) return a.Kills > b.Kills end)
+	
+	local jsonStats = HttpService:JSONEncode(statsList)
+	
+	self:BroadcastStatus("GAME OVER", jsonStats)
+	
+	-- Immediately move all players out of Alive folder to disable PVP
+	local aliveFolder = workspace:FindFirstChild("Alive")
+	if aliveFolder then
+		for _, char in ipairs(aliveFolder:GetChildren()) do
+			char.Parent = workspace
+		end
+	end
+	
+	-- Wait for Game Over screen
+	task.wait(5)
+	
+	-- Teleport Players to Lobby (Don't Kill)
+	local lobbyCFrame = CFrame.new(0, 50, 0)
+	-- Try to find actual lobby spawn
+	local spawn = workspace:FindFirstChild("SpawnLocation")
+	if spawn then
+		lobbyCFrame = spawn.CFrame + Vector3.new(0,5,0)
+	end
+	
+	for _, player in ipairs(Players:GetPlayers()) do
+		task.spawn(function()
+			local char = player.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			local human = char and char:FindFirstChild("Humanoid")
+			
+			if char and hrp and human and human.Health > 0 then
+				hrp.CFrame = lobbyCFrame
+				hrp.AssemblyLinearVelocity = Vector3.zero
+				hrp.AssemblyAngularVelocity = Vector3.zero
+				-- Heal them? Optional.
+				human.Health = human.MaxHealth
+			else
+				player:LoadCharacter()
+			end
+		end)
+	end
+    
+    task.wait(1) -- Safety wait to ensure players are out
 	
 	-- Cleanup Map
 	local mapFolder = workspace:FindFirstChild("Map")
 	if mapFolder then
 		mapFolder:ClearAllChildren()
 	end
-
-	-- Cleanup Alive Folder Players (Respawn to Lobby)
-	for _, player in ipairs(Players:GetPlayers()) do
-		task.spawn(function()
-			player:LoadCharacter()
-		end)
-	end
+	
+	-- Reset Stats
+	self.RoundStats = {}
 
 	task.wait(3) -- Short delay before intermission
 end

@@ -59,6 +59,7 @@ return ByteNetMax.defineNamespace("Network", function()
 					status = ByteNetMax.string, -- "Intermission", "Round", "Ended"
 					timeLeft = ByteNetMax.int16,
 					message = ByteNetMax.optional(ByteNetMax.string),
+					stats = ByteNetMax.optional(ByteNetMax.string), -- JSON encoded { {Name="Player1", Kills=5, Deaths=2}, ... }
 				}),
 			}),
 		},

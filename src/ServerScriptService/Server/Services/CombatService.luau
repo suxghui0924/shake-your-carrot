@@ -64,6 +64,14 @@ function CombatService:HandleHit(attacker, targetHumanoid, attackType)
 		return
 	end
 	
+	-- [VALIDATION] Alive Folder Check (PVP allowed only in Alive)
+	local aliveFolder = workspace:FindFirstChild("Alive")
+	if not aliveFolder then return end
+	
+	if not attackerChar:IsDescendantOf(aliveFolder) or not targetChar:IsDescendantOf(aliveFolder) then
+		return
+	end
+	
 	-- Friendly Fire Check
 	local targetPlayer = Players:GetPlayerFromCharacter(targetChar)
 	if targetPlayer and targetPlayer.Team == attacker.Team and attacker.Team ~= nil then
@@ -90,7 +98,19 @@ function CombatService:ApplyDamage(attacker, targetHumanoid, scale, attackType)
         knockback *= 2
     end
     
-    targetHumanoid:TakeDamage(damage)
+	-- Tag Humanoid for Kill Attribution
+	local creatorTag = targetHumanoid:FindFirstChild("creator")
+	if creatorTag then
+		creatorTag:Destroy()
+	end
+	
+	creatorTag = Instance.new("ObjectValue")
+	creatorTag.Name = "creator"
+	creatorTag.Value = attacker
+	creatorTag.Parent = targetHumanoid
+	game:GetService("Debris"):AddItem(creatorTag, 2) -- Tag lasts 2 seconds
+	
+	targetHumanoid:TakeDamage(damage)
     
     -- Apply Knockback
     local targetRoot = targetHumanoid.Parent:FindFirstChild("HumanoidRootPart")
