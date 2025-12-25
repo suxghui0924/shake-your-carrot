@@ -3,27 +3,37 @@ local Players = game:GetService("Players")
 
 local Packages = ReplicatedStorage.Packages
 local Network = require(ReplicatedStorage.Shared.Network)
-local ShapecastHitbox = require(Packages.shapecasthitbox)
+
+-- [HitboxClass Setup]
+local HitboxClass = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("HitboxClass"))
+-- Note: User mentioned "Select your Alive folder". We need to set it via code or maybe the module handles it?
+-- Docs: "select your Alive folder... within HitboxClass's settings folder". 
+-- If modifying the Module script structure is hard via code, we might need to rely on defaults or configure it if exposed via API.
+-- Docs say: "Class Settings... Alive Folder". It doesn't explicitly say how to set it via script if it's a "Setting Folder" inside the module.
+-- BUT, typically these modules have `HitboxClass.Settings.Alive = ...` or similar.
+-- Let's try to set it if possible, otherwise assume user configured it or it defaults to Workspace?
+-- Actually, the docs say "HitboxClass cannot run without this being set."
+-- Let's look at the docs again: "Next, select your Alive folder within HitboxClass's settings folder." -> Sounds like an ObjectValue in Studio.
+-- However, we are scripting. Let's hope we can set it via `HitboxClass.Settings.Alive`.
+-- Wait, "Class Settings" heading in docs lists "Alive Folder".
+-- If it's a Module, usually `require(HitboxClass).Settings.Alive = workspace`. Let's try that.
 
 local CombatService = {
     BASE_DAMAGE = 10,
     BASE_KNOCKBACK = 20,
-    Hitboxes = {}, -- Cache for hitboxes [Player] = Hitbox
 }
 
 function CombatService:Init()
-    -- Enable Debug Visualization for feedback
-    ShapecastHitbox.Settings.Debug_Visible = true
+    -- Configure HitboxClass
+    if HitboxClass.Settings then
+        HitboxClass.Settings.Alive = workspace
+        -- HitboxClass.Settings.Projectiles = workspace -- Optional?
+    else
+        warn("HitboxClass.Settings not found via script. Ensure it is configured in the module hierarchy.")
+    end
 
     Network.packets.carrotAttack.listen(function(data, player)
         self:HandleAttack(player, data.attackType)
-    end)
-    
-    Players.PlayerRemoving:Connect(function(player)
-        if self.Hitboxes[player] then
-            self.Hitboxes[player]:Destroy()
-            self.Hitboxes[player] = nil
-        end
     end)
 end
 
@@ -32,74 +42,73 @@ function CombatService:HandleAttack(player, attackType)
     if not character then return end
     
     local tool = character:FindFirstChildOfClass("Tool")
-    if not tool then return end
+    -- Weapon check optional? If they fired the event they probably have it, 
+    -- but good to verify they are holding the correct tool or just any tool?
+    -- Actually, user said "Self hit is possible", so we need to be careful.
     
-    local handle = tool:FindFirstChild("Handle") or tool:FindFirstChild("PrimaryPart") or character:FindFirstChild("RightHand")
-    if not handle then return end
-    
-    -- [1] Create DmgPoint Attachment if missing
-    local att = handle:FindFirstChild("DmgPoint")
-    if not att then
-        att = Instance.new("Attachment")
-        att.Name = "DmgPoint"
-        att.Position = Vector3.new(0, 1, -3) -- Forward (-Z) and slightly up
-        att.Parent = handle
-    else
-        att.Position = Vector3.new(0, 1, -3)
-    end
+    local function cleanup() end 
     
     local carrotScale = player:GetAttribute("CarrotScale") or 1.0
-    local hitRadius = 2.5 * carrotScale
+    local hitRadius = 3 * carrotScale -- Slightly larger for easier hits
+    local offsetZ = -3 - (hitRadius/2) -- Position in front
     
-    -- [2] Get or Create Hitbox
-    local hitbox = self.Hitboxes[player]
-    if not hitbox or hitbox.Instance ~= handle then
-        if hitbox then hitbox:Destroy() end
-        hitbox = ShapecastHitbox.new(handle)
-        self.Hitboxes[player] = hitbox
+    -- [Create Hitbox Part]
+    local hbPart = Instance.new("Part")
+    hbPart.Name = "Hitbox_" .. player.Name
+    hbPart.Size = Vector3.new(hitRadius, hitRadius, hitRadius) -- Cube approximation or just use for positioning?
+    -- If using "InPart" (default if part passed), the part's shape matters.
+    hbPart.Shape = Enum.PartType.Ball
+    hbPart.CanCollide = false
+    hbPart.Massless = true
+    hbPart.Transparency = 1 -- Debug = true will handle visuals, or we make it 1
+    hbPart.Parent = workspace
+    -- Position it initially at the character to avoid flying in from 0,0,0?
+    hbPart.CFrame = character.PrimaryPart.CFrame * CFrame.new(0, 0, offsetZ)
+    
+    local params = {
+        SizeOrPart = hbPart,
+        Debug = true, -- User requested visualization
+        DebounceTime = 0.5, -- Prevent hitting same target multiple times per swing
+        -- Blacklist? "A blacklist that'll be used to exclude certain things".
+        -- We can blacklist the caster.
+        Blacklist = {character},
+    }
+    
+    local hitbox, connected = HitboxClass.new(params)
+    
+    if not hitbox then
+        warn("Failed to create Hitbox for " .. player.Name)
+        hbPart:Destroy()
+        return
     end
     
-    -- [3] Configure Cast (Spherecast based on scale)
-    hitbox:SetCastData({
-        CastType = "Spherecast",
-        Radius = hitRadius,
-    })
+    -- Weld to Character (follow rotation/movement)
+    -- "WeldTo... with an offset defined by OffsetCFrame"
+    -- Since we want it in FRONT, we weld to PrimaryPart with offset.
+    hitbox:WeldTo(character.PrimaryPart, CFrame.new(0, 0, offsetZ))
     
-    -- [4] Hit Logic
-    local hits = {} -- distinct hits per swing
-    
-    hitbox:OnHit(function(result)
-        local target = result.Instance
-        local humanoid = target.Parent:FindFirstChild("Humanoid") or target.Parent.Parent:FindFirstChild("Humanoid")
-        
-        if humanoid and humanoid.Health > 0 then
-            local targetChar = humanoid.Parent
-            
-            -- Prevent Self-Hit
-            if targetChar == character then return end
-            
-            if hits[targetChar] then return end 
-            hits[targetChar] = true
-            
-            local targetPlayer = Players:GetPlayerFromCharacter(targetChar)
-            if targetPlayer and targetPlayer.Team == player.Team and player.Team ~= nil then
-                return -- Friendly fire
+    hitbox.HitSomeone:Connect(function(hitModels)
+        for _, model in ipairs(hitModels) do
+            local humanoid = model:FindFirstChild("Humanoid")
+            if humanoid and humanoid.Health > 0 then
+                -- Friendly Fire Check
+                local targetPlayer = Players:GetPlayerFromCharacter(model)
+                if targetPlayer and targetPlayer.Team == player.Team and player.Team ~= nil then
+                    continue
+                end
+                
+                self:ApplyDamage(player, humanoid, carrotScale, attackType)
             end
-            
-            self:ApplyDamage(player, humanoid, carrotScale, attackType)
         end
     end)
     
-    -- [5] Start & Cleanup using RaycastParams for filtering
-    local params = RaycastParams.new()
-    params.FilterDescendantsInstances = {character}
-    params.FilterType = Enum.RaycastFilterType.Exclude
+    hitbox:Start()
     
-    hitbox:HitStart(0.35, params)
-    
-    hitbox:OnStopped(function(cleanup)
-        cleanup() 
-        table.clear(hits)
+    -- Cleanup after swing duration
+    task.delay(0.35, function()
+        hitbox:Stop()
+        hitbox:Destroy()
+        hbPart:Destroy()
     end)
     
     -- Lunge
