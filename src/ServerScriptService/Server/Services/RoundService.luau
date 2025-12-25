@@ -102,6 +102,9 @@ function RoundService:StartRound()
 			chosenMapCFrame = spawnLocation.CFrame + Vector3.new(0, 3, 0)
 		end
 	end
+	
+	-- Allow map to replicate/load
+	task.wait(2)
 
 	-- Setup Alive Folder
 	local aliveFolder = workspace:FindFirstChild("Alive")
@@ -122,8 +125,19 @@ function RoundService:StartRound()
 				character.Parent = aliveFolder
 				-- Wait a brief moment to ensure physics exist
 				task.wait()
-				if character:FindFirstChild("HumanoidRootPart") then
-					character.HumanoidRootPart.CFrame = chosenMapCFrame
+				local hrp = character:FindFirstChild("HumanoidRootPart")
+				if hrp then
+					-- Pre-load area if streaming enabled (best effort)
+					if player then
+						pcall(function() player:RequestStreamAroundAsync(chosenMapCFrame.Position) end)
+					end
+					
+					hrp.CFrame = chosenMapCFrame
+					
+					-- Anchor momentarily to prevent falling through floor
+					hrp.Anchored = true
+					task.wait(2)
+					if hrp then hrp.Anchored = false end
 				end
 			end
 		end)
