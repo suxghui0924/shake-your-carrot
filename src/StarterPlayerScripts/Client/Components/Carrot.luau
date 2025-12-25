@@ -24,6 +24,8 @@ function Carrot:Construct()
     self.LastShakeTime = 0 -- For shake animation debounce
 end
 
+local ContextActionService = game:GetService("ContextActionService")
+
 function Carrot:Start()
     local tool = self.Instance
     if not tool:IsA("Tool") then
@@ -31,6 +33,7 @@ function Carrot:Start()
         return
     end
 
+    -- [ INPUT: ATTACK (Left Click) ]
     self._trove:Connect(tool.Activated, function()
         self.ChargeStartTime = os.clock()
         self.IS_CHARGING = true
@@ -41,16 +44,19 @@ function Carrot:Start()
             local holdDuration = os.clock() - self.ChargeStartTime
             self.IS_CHARGING = false
             
-            if holdDuration > 1.0 then
+            if holdDuration > 0.5 then
                 self:PerformAttack("Charge")
             else
-                -- If short click, we treat it as Shake + Combo step
-                self:RequestShake()
                 self:HandleComboAttack()
             end
         end
     end)
-
+    
+    -- [ INPUT: SHAKE (Key 'Q') ]
+    self:BindShakeAction()
+    
+    -- [ UI: Keybind Hint ]
+    self:CreateKeybindHint()
 
     -- Visual Feedback on Growth
     local player = Players.LocalPlayer
@@ -60,8 +66,80 @@ function Carrot:Start()
         end
     end)
     
-    -- Note: Removed initial OnScaleChanged() call
-    -- Animation only plays when CarrotScale actually changes (on shake/click)
+    -- Cleanup on Unequip
+    self._trove:Connect(tool.Unequipped, function()
+        ContextActionService:UnbindAction("ShakeCarrot")
+        if self.KeybindUI then self.KeybindUI.Enabled = false end
+    end)
+    
+    self._trove:Connect(tool.Equipped, function()
+        self:BindShakeAction()
+        if self.KeybindUI then self.KeybindUI.Enabled = true end
+    end)
+end
+
+function Carrot:BindShakeAction()
+    ContextActionService:BindAction("ShakeCarrot", function(name, state, input)
+        if state == Enum.UserInputState.Begin then
+            self:RequestShake()
+        end
+    end, true, Enum.KeyCode.Q)
+    
+    -- Set image for mobile button if needed
+    ContextActionService:SetTitle("ShakeCarrot", "SHAKE")
+end
+
+function Carrot:CreateKeybindHint()
+    local player = Players.LocalPlayer
+    local playerGui = player:WaitForChild("PlayerGui")
+    
+    local screen = Instance.new("ScreenGui")
+    screen.Name = "CarrotKeybindHint"
+    screen.Parent = playerGui
+    screen.ResetOnSpawn = false
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.fromOffset(200, 50)
+    frame.Position = UDim2.new(0.5, 0, 0.85, 0) -- Bottom Center
+    frame.AnchorPoint = Vector2.new(0.5, 1)
+    frame.BackgroundTransparency = 1
+    frame.Parent = screen
+    
+    -- Key Icon
+    local keyRef = Instance.new("TextLabel")
+    keyRef.Size = UDim2.fromOffset(40, 40)
+    keyRef.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    keyRef.BackgroundTransparency = 0.5
+    keyRef.Text = "Q"
+    keyRef.TextColor3 = Color3.fromRGB(255, 255, 255)
+    keyRef.Font = Enum.Font.FredokaOne
+    keyRef.TextSize = 24
+    keyRef.Parent = frame
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = keyRef
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+    stroke.Thickness = 2
+    stroke.Parent = keyRef
+    
+    -- Label
+    local label = Instance.new("TextLabel")
+    label.Text = "SHAKE!"
+    label.Size = UDim2.new(1, -50, 1, 0)
+    label.Position = UDim2.fromOffset(50, 0)
+    label.BackgroundTransparency = 1
+    label.Font = Enum.Font.FredokaOne
+    label.TextSize = 24
+    label.TextColor3 = Color3.fromRGB(255, 170, 0)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextStrokeTransparency = 0
+    label.Parent = frame
+    
+    self.KeybindUI = screen
+    self._trove:Add(screen)
 end
 
 function Carrot:RequestShake()
