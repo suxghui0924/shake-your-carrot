@@ -89,6 +89,7 @@ function Carrot:BindShakeAction()
     ContextActionService:SetTitle("ShakeCarrot", "SHAKE")
 end
 
+
 function Carrot:CreateKeybindHint()
     local player = Players.LocalPlayer
     local playerGui = player:WaitForChild("PlayerGui")
@@ -98,45 +99,105 @@ function Carrot:CreateKeybindHint()
     screen.Parent = playerGui
     screen.ResetOnSpawn = false
     
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.fromOffset(200, 50)
-    frame.Position = UDim2.new(0.5, 0, 0.85, 0) -- Bottom Center
-    frame.AnchorPoint = Vector2.new(0.5, 1)
-    frame.BackgroundTransparency = 1
-    frame.Parent = screen
+    -- Main Container (Bottom Right)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.fromOffset(160, 110)
+    container.Position = UDim2.new(1, -30, 1, -30)
+    container.AnchorPoint = Vector2.new(1, 1)
+    container.BackgroundTransparency = 1
+    container.Parent = screen
     
-    -- Key Icon
-    local keyRef = Instance.new("TextLabel")
-    keyRef.Size = UDim2.fromOffset(40, 40)
-    keyRef.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    keyRef.BackgroundTransparency = 0.5
-    keyRef.Text = "Q"
-    keyRef.TextColor3 = Color3.fromRGB(255, 255, 255)
-    keyRef.Font = Enum.Font.FredokaOne
-    keyRef.TextSize = 24
-    keyRef.Parent = frame
+    local list = Instance.new("UIListLayout")
+    list.Padding = UDim.new(0, 8)
+    list.HorizontalAlignment = Enum.HorizontalAlignment.Right
+    list.VerticalAlignment = Enum.VerticalAlignment.Bottom
+    list.SortOrder = Enum.SortOrder.LayoutOrder
+    list.Parent = container
+
+    -- Helper to create a hint row
+    local function createRow(key, action, layoutOrder)
+        local row = Instance.new("Frame")
+        row.Size = UDim2.new(1, 0, 0, 45)
+        row.BackgroundTransparency = 1
+        row.LayoutOrder = layoutOrder
+        row.Parent = container
+        
+        local rowList = Instance.new("UIListLayout")
+        rowList.FillDirection = Enum.FillDirection.Horizontal
+        rowList.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        rowList.VerticalAlignment = Enum.VerticalAlignment.Center
+        rowList.Padding = UDim.new(0, 10)
+        rowList.Parent = row
+        
+        -- Action Label
+        local label = Instance.new("TextLabel")
+        label.Text = action
+        label.Font = Enum.Font.FredokaOne
+        label.TextSize = 22
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        label.TextXAlignment = Enum.TextXAlignment.Right
+        label.BackgroundTransparency = 1
+        label.AutomaticSize = Enum.AutomaticSize.XY
+        label.LayoutOrder = 1
+        label.TextStrokeTransparency = 0.5
+        label.Parent = row
+        
+        -- Key Icon (Keycap Style)
+        local keyFrame = Instance.new("Frame")
+        keyFrame.Size = UDim2.fromOffset(42, 42)
+        keyFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35) -- Dark Key Body
+        keyFrame.BorderSizePixel = 0
+        keyFrame.LayoutOrder = 2
+        keyFrame.Parent = row
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 8)
+        corner.Parent = keyFrame
+        
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = Color3.fromRGB(80, 80, 90) -- Lighter edge
+        stroke.Thickness = 2
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        stroke.Parent = keyFrame
+        
+        -- Key Bottom Shadow (3D effect)
+        local shadow = Instance.new("Frame")
+        shadow.ZIndex = 0
+        shadow.Size = UDim2.new(1, 0, 1, 4) -- Sticks out bottom
+        shadow.Position = UDim2.new(0, 0, 0, 0)
+        shadow.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+        shadow.BorderSizePixel = 0
+        shadow.Parent = keyFrame
+        
+        local shadowCorner = Instance.new("UICorner")
+        shadowCorner.CornerRadius = UDim.new(0, 8)
+        shadowCorner.Parent = shadow
+        
+        -- Key Text
+        local keyText = Instance.new("TextLabel")
+        keyText.Size = UDim2.fromScale(1, 1)
+        keyText.BackgroundTransparency = 1
+        keyText.Text = key
+        keyText.Font = Enum.Font.FredokaOne
+        keyText.TextSize = 20
+        keyText.TextColor3 = Color3.fromRGB(220, 220, 230)
+        keyText.Parent = keyFrame
+        keyText.ZIndex = 2
+        
+        -- Orange Accent for Q
+        if key == "Q" then
+             keyFrame.BackgroundColor3 = Color3.fromRGB(255, 100, 0)
+             stroke.Color = Color3.fromRGB(255, 150, 50)
+             shadow.BackgroundColor3 = Color3.fromRGB(180, 60, 0)
+             keyText.TextColor3 = Color3.fromHex("#FFFFFF")
+        end
+        
+        return row
+    end
     
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = keyRef
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(255, 255, 255)
-    stroke.Thickness = 2
-    stroke.Parent = keyRef
-    
-    -- Label
-    local label = Instance.new("TextLabel")
-    label.Text = "SHAKE!"
-    label.Size = UDim2.new(1, -50, 1, 0)
-    label.Position = UDim2.fromOffset(50, 0)
-    label.BackgroundTransparency = 1
-    label.Font = Enum.Font.FredokaOne
-    label.TextSize = 24
-    label.TextColor3 = Color3.fromRGB(255, 170, 0)
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.TextStrokeTransparency = 0
-    label.Parent = frame
+    -- Add Hints
+    createRow("LMB", "ATTACK", 1)
+    createRow("Q", "SHAKE", 2)
     
     self.KeybindUI = screen
     self._trove:Add(screen)
