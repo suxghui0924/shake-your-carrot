@@ -35,12 +35,19 @@ function AnnouncerUI.new(props)
                 BackgroundTransparency = 1,
                 
                 [Children] = {
+                    scope:New "UIListLayout" {
+                        SortOrder = Enum.SortOrder.LayoutOrder,
+                        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                        VerticalAlignment = Enum.VerticalAlignment.Center,
+                        Padding = UDim.new(0, 5) -- Fixed 5px gap
+                    },
+
                     -- Main Message (e.g., "Round Starts in...")
                     scope:New "TextLabel" {
                         Name = "MainText",
-                        Size = UDim2.new(1, 0, 0.4, 0),
-                        Position = UDim2.fromScale(0.5, 0.35),
-                        AnchorPoint = Vector2.new(0.5, 0.5),
+                        LayoutOrder = 1,
+                        Size = UDim2.new(1, 0, 0, 40),
+                        AutomaticSize = Enum.AutomaticSize.Y,
                         BackgroundTransparency = 1,
                         Text = scope:Computed(function(use)
                             local s = use(status)
@@ -60,7 +67,7 @@ function AnnouncerUI.new(props)
                         end),
                         TextColor3 = Color3.fromRGB(255, 255, 255),
                         Font = Enum.Font.FredokaOne,
-                        TextSize = 32, -- Increased from 24
+                        TextSize = 32,
                         TextStrokeTransparency = 0.5,
                         
                         [Children] = {
@@ -74,20 +81,15 @@ function AnnouncerUI.new(props)
                     -- Timer / Emphasis Text
                     scope:New "TextLabel" {
                         Name = "TimerText",
-                        Size = UDim2.new(1, 0, 0.5, 0),
-                        Position = UDim2.fromScale(0.5, 0.65),
-                        AnchorPoint = Vector2.new(0.5, 0.5),
+                        LayoutOrder = 2,
+                        Size = UDim2.new(1, 0, 0, 40),
+                        AutomaticSize = Enum.AutomaticSize.Y,
                         BackgroundTransparency = 1,
                         Text = scope:Computed(function(use)
                             local m = use(message)
-                            -- If there's a specific message (like "GO!"), hiding the timer might be cleaner?
-                            -- For now showing timer always if message is nil or empty, or if we want to show both.
-                            -- Actually, let's just show time numbers.
                             local t = use(timeLeft)
                              if m and m ~= "" then
-                                return "" -- Message takes precedence visually in the main text slot? 
-                                          -- Wait, main text slot logic above puts message there. 
-                                          -- If message is "GO!", we probably don't need the timer below it immediately.
+                                return "" 
                             end
                             return tostring(t)
                         end),
@@ -99,7 +101,7 @@ function AnnouncerUI.new(props)
                             return Color3.fromRGB(255, 200, 50) -- Normal Gold-ish
                         end),
                         Font = Enum.Font.FredokaOne,
-                        TextSize = 32, -- Decreased from 48
+                        TextSize = 32,
                         TextStrokeTransparency = 0,
                         
                         [Children] = {
