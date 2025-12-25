@@ -96,7 +96,15 @@ function RoundService:StartRound()
 		local clonedMap = randomMap:Clone()
 		clonedMap.Parent = mapFolder
 		
-		-- Find Spawn
+		-- Default to Map Center if possible
+		if clonedMap:IsA("Model") then
+			local cframe, size = clonedMap:GetBoundingBox()
+			chosenMapCFrame = cframe + Vector3.new(0, size.Y/2 + 5, 0)
+		elseif clonedMap:IsA("BasePart") then
+			chosenMapCFrame = clonedMap.CFrame + Vector3.new(0, 5, 0)
+		end
+		
+		-- Find Spawn (Priority)
 		local spawnLocation = clonedMap:FindFirstChild("Spawn") or clonedMap:FindFirstChild("SpawnLocation")
 		if spawnLocation and spawnLocation:IsA("BasePart") then
 			chosenMapCFrame = spawnLocation.CFrame + Vector3.new(0, 3, 0)
