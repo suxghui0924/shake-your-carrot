@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 
 local Packages = ReplicatedStorage.Packages
 local Network = require(ReplicatedStorage.Shared.Network)
+local Sounds = require(ReplicatedStorage.Shared.Sounds)
 
 -- [HitboxClass Setup]
 local HitboxClass = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("HitboxClass"))
@@ -108,6 +109,15 @@ function CombatService:HandleAttack(player, attackType)
                 if targetPlayer and targetPlayer.Team == player.Team and player.Team ~= nil then
                     continue
                 end
+                
+                -- Play Hit Sound
+                local sound = Instance.new("Sound")
+                sound.Name = "HitSound"
+                sound.SoundId = Sounds.Hit.SoundId
+                sound.Volume = Sounds.Hit.Volume
+                sound.Parent = model:FindFirstChild("Head") or model.PrimaryPart
+                sound:Play()
+                game:GetService("Debris"):AddItem(sound, 1)
                 
                 self:ApplyDamage(player, humanoid, carrotScale, attackType)
             end

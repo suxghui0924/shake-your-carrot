@@ -258,7 +258,7 @@ function Carrot:PlayAttackAnimation(step)
         -- For now, just play. Roblox handles transitions via FadeTime (default 0.1).
         local track = animator:LoadAnimation(animInstance)
         track.Priority = Enum.AnimationPriority.Action
-        track:Play(0.1, 1, 1.4) -- Faster speed (1.4x)
+        track:Play(0.1, 1, 1.6) -- Faster speed (1.6x)
         -- Adjust speed based on attack speed? Default 1.0 is fine.
     else
         warn("Animation not found:", animName)
