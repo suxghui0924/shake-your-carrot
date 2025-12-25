@@ -73,24 +73,81 @@ function RoundService:BroadcastStatus(message)
 end
 
 function RoundService:StartRound()
-    -- print("Round Starting!")
-    self:BroadcastStatus("GO!")
-    
-    -- Reset all players' growth
-    for _, player in ipairs(Players:GetPlayers()) do
-        GrowthService:ResetGrowth(player)
-        
-        -- Optional: Respawn players at spawn points if needed
-        -- player:LoadCharacter() 
-        -- For now, we just reset their growth as per requirements. 
-        -- If they are dead, they will respawn naturally.
-    end
+	-- print("Round Starting!")
+	self:BroadcastStatus("GO!")
+
+	-- Clean/Setup Map Folder
+	local mapFolder = workspace:FindFirstChild("Map")
+	if not mapFolder then
+		mapFolder = Instance.new("Folder")
+		mapFolder.Name = "Map"
+		mapFolder.Parent = workspace
+	else
+		mapFolder:ClearAllChildren()
+	end
+
+	-- Clone Map
+	local mapsFolder = ReplicatedStorage:FindFirstChild("Assets") and ReplicatedStorage.Assets:FindFirstChild("Maps")
+	local maps = mapsFolder and mapsFolder:GetChildren() or {}
+	local chosenMapCFrame = CFrame.new(0, 50, 0) -- Default fallback
+
+	if #maps > 0 then
+		local randomMap = maps[math.random(1, #maps)]
+		local clonedMap = randomMap:Clone()
+		clonedMap.Parent = mapFolder
+		
+		-- Find Spawn
+		local spawnLocation = clonedMap:FindFirstChild("Spawn") or clonedMap:FindFirstChild("SpawnLocation")
+		if spawnLocation and spawnLocation:IsA("BasePart") then
+			chosenMapCFrame = spawnLocation.CFrame + Vector3.new(0, 3, 0)
+		end
+	end
+
+	-- Setup Alive Folder
+	local aliveFolder = workspace:FindFirstChild("Alive")
+	if not aliveFolder then
+		aliveFolder = Instance.new("Folder")
+		aliveFolder.Name = "Alive"
+		aliveFolder.Parent = workspace
+	end
+
+	-- Teleport Players
+	for _, player in ipairs(Players:GetPlayers()) do
+		task.spawn(function()
+			GrowthService:ResetGrowth(player)
+			player:LoadCharacter()
+			
+			local character = player.Character or player.CharacterAdded:Wait()
+			if character then
+				character.Parent = aliveFolder
+				-- Wait a brief moment to ensure physics exist
+				task.wait()
+				if character:FindFirstChild("HumanoidRootPart") then
+					character.HumanoidRootPart.CFrame = chosenMapCFrame
+				end
+			end
+		end)
+	end
 end
 
 function RoundService:EndRound()
-    -- print("Round Ended!")
-    self:BroadcastStatus("Time's Up!")
-    task.wait(3) -- Short delay before intermission
+	-- print("Round Ended!")
+	self:BroadcastStatus("Time's Up!")
+	
+	-- Cleanup Map
+	local mapFolder = workspace:FindFirstChild("Map")
+	if mapFolder then
+		mapFolder:ClearAllChildren()
+	end
+
+	-- Cleanup Alive Folder Players (Respawn to Lobby)
+	for _, player in ipairs(Players:GetPlayers()) do
+		task.spawn(function()
+			player:LoadCharacter()
+		end)
+	end
+
+	task.wait(3) -- Short delay before intermission
 end
 
 return RoundService
