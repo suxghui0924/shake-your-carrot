@@ -48,6 +48,13 @@ return ByteNetMax.defineNamespace("Network", function()
 					skinId = ByteNetMax.string,
 				}),
 			}),
+			roundStatusUpdate = ByteNetMax.definePacket({
+				value = ByteNetMax.struct({
+					status = ByteNetMax.string, -- "Intermission", "Round", "Ended"
+					timeLeft = ByteNetMax.int16,
+					message = ByteNetMax.optional(ByteNetMax.string),
+				}),
+			}),
 		},
 		queries = {
 			getLeaderboard = ByteNetMax.defineQuery({
