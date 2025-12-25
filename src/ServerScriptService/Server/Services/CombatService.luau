@@ -60,9 +60,10 @@ function CombatService:HandleAttack(player, attackType)
     local carrotScale = player:GetAttribute("CarrotScale") or 1.0
     
     -- Hitbox Dimensions (Square/Cube per user request)
-    local sizeX = 5 * carrotScale
-    local sizeY = 5 * carrotScale -- Reduced from 8 (was too tall)
-    local sizeZ = 5 * carrotScale
+    -- Reduced base size per user request (was 5, now 3.5)
+    local sizeX = 3.5 * carrotScale
+    local sizeY = 3.5 * carrotScale 
+    local sizeZ = 3.5 * carrotScale
     
     -- Position: Closer to character (Back Face at -1.0)
     local offsetZ = -1.0 - (sizeZ / 2) 
