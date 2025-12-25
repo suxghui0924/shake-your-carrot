@@ -4,18 +4,21 @@ local Players = game:GetService("Players")
 
 local Packages = ReplicatedStorage.Packages
 local Fusion = require(Packages.Fusion)
-local Value = Fusion.Value
 
 local Network = require(ReplicatedStorage.Shared.Network)
 local QuestUI = require(script.Parent.Parent.Components.UI.QuestUI)
 
 local QuestController = {
-	scope = Fusion.scoped({}),
-	quests = Value({}),
-	isVisible = Value(false),
+	scope = nil,
+	quests = nil,
+	isVisible = nil,
 }
 
 function QuestController:Init()
+	self.scope = Fusion.scoped({})
+	self.quests = self.scope:Value({})
+	self.isVisible = self.scope:Value(false)
+
 	-- Mount UI
 	QuestUI.new({
 		scope = self.scope,

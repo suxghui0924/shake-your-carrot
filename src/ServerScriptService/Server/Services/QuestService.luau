@@ -143,7 +143,7 @@ function QuestService:SendUpdate(player)
 		})
 	end
 	
-	Network.packets.questUpdate.send(player, {
+	Network.packets.questUpdate.sendTo(player, {
 		quests = HttpService:JSONEncode(clientQuests)
 	})
 end
