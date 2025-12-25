@@ -6,5 +6,10 @@ local ServerFolder = script.Parent
 local Services = ServerFolder:FindFirstChild("Services")
 local Components = ServerFolder:FindFirstChild("Components")
 
-Loader.SpawnAll(Loader.LoadDescendants(Services), "Init")
-Loader.LoadDescendants(Components)
+if Services then
+	Loader.SpawnAll(Loader.LoadDescendants(Services), "Init")
+end
+
+if Components then
+	Loader.LoadDescendants(Components)
+end

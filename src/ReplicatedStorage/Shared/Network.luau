@@ -30,6 +30,14 @@ return ByteNetMax.defineNamespace("Network", function()
 			gameReset = ByteNetMax.definePacket({
 				value = ByteNetMax.nothing,
 			}),
+			shakeCarrot = ByteNetMax.definePacket({
+				value = ByteNetMax.nothing,
+			}),
+			carrotAttack = ByteNetMax.definePacket({
+				value = ByteNetMax.struct({
+					attackType = ByteNetMax.string, -- "Normal", "Combo", "Charge"
+				}),
+			}),
 		},
 		queries = {
 			getLeaderboard = ByteNetMax.defineQuery({
