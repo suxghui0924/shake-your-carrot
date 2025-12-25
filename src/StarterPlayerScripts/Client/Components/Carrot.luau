@@ -212,15 +212,45 @@ function Carrot:HandleComboAttack()
     if now - self.LastAttackTime > self.COMBO_TIMEOUT then
         self.ComboStep = 1
     else
-        self.ComboStep = (self.ComboStep % 3) + 1
+        self.ComboStep = (self.ComboStep % 4) + 1
     end
     
     self.LastAttackTime = now
     
-    if self.ComboStep == 3 then
+    -- Play Animation
+    self:PlayAttackAnimation(self.ComboStep)
+    
+    -- 4th Hit is the "Combo" finisher
+    if self.ComboStep == 4 then
         self:PerformAttack("Combo")
     else
         self:PerformAttack("Normal")
+    end
+end
+
+function Carrot:PlayAttackAnimation(step)
+    local player = Players.LocalPlayer
+    local character = player.Character
+    if not character then return end
+    
+    local humanoid = character:FindFirstChild("Humanoid")
+    local animator = humanoid and humanoid:FindFirstChild("Animator")
+    if not animator then return end
+    
+    -- Load Animation Track
+    local animFolder = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Animations")
+    local animName = "Swing" .. step
+    local animInstance = animFolder:FindFirstChild(animName)
+    
+    if animInstance then
+        -- Stop previous if desired? 
+        -- For now, just play. Roblox handles transitions via FadeTime (default 0.1).
+        local track = animator:LoadAnimation(animInstance)
+        track.Priority = Enum.AnimationPriority.Action
+        track:Play()
+        -- Adjust speed based on attack speed? Default 1.0 is fine.
+    else
+        warn("Animation not found:", animName)
     end
 end
 
