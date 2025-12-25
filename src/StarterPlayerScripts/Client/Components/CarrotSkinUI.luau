@@ -500,13 +500,16 @@ function CarrotSkinUI:CreateSkinCard(id, skin)
 			self.Scope:New "TextLabel" {
 				Text = skin.Name,
 				Font = Enum.Font.FredokaOne,
-				TextSize = 14,
+				TextSize = 18,
 				TextColor3 = THEME.TEXT_MAIN,
 				Position = UDim2.fromScale(0.5, 0.75),
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				BackgroundTransparency = 1,
 				TextTruncate = Enum.TextTruncate.AtEnd,
 				Size = UDim2.fromScale(0.9, 0.2),
+                [Children] = {
+                    self.Scope:New "UIStroke" { Color = Color3.new(0,0,0), Thickness = 2, Transparency = 0.5 }
+                }
 			},
 			
 			-- Lock Icon
@@ -634,7 +637,7 @@ function CarrotSkinUI:CreateMiniViewport(id)
 	cam.FieldOfView = 50
 	
 	local vp = self.Scope:New "ViewportFrame" {
-		Size = UDim2.fromScale(0.9, 0.9), -- Large enough to fill crop
+		Size = UDim2.fromScale(0.75, 0.75), -- Reduced from 0.9
 		Position = UDim2.fromScale(0.5, 0.4),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		BackgroundTransparency = 1,
@@ -694,7 +697,7 @@ function CarrotSkinUI:CreateMiniViewport(id)
 			
 			local center = (min + max) / 2
 			local size = max - min
-			local dist = math.max(size.Magnitude, 3) * 1.0
+			local dist = math.max(size.Magnitude, 3) * 1.4 -- Zoom Out (1.0 -> 1.4)
 
 			local rot = CFrame.Angles(0, math.rad(30), 0)
 			local tilt = CFrame.Angles(math.rad(-15), 0, 0)
