@@ -72,6 +72,11 @@ return ByteNetMax.defineNamespace("Network", function()
 					questId = ByteNetMax.string,
 				}),
 			}),
+			itemPickup = ByteNetMax.definePacket({
+				value = ByteNetMax.struct({
+					itemInstance = ByteNetMax.inst,
+				}),
+			}),
 		},
 		queries = {
 			getLeaderboard = ByteNetMax.defineQuery({
