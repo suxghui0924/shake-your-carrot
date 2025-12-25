@@ -107,7 +107,7 @@ function Carrot:CreateKeybindHint()
     -- Main Container (Bottom Right)
     local container = Instance.new("Frame")
     container.Size = UDim2.fromOffset(160, 110)
-    container.Position = UDim2.new(1, -30, 1, -30)
+    container.Position = UDim2.new(1, -30, 1, -15) -- Lowered slightly (was -30)
     container.AnchorPoint = Vector2.new(1, 1)
     container.BackgroundTransparency = 1
     container.Parent = screen
@@ -306,7 +306,7 @@ function Carrot:OnScaleChanged()
     -- Visual FX (Highlight/Glow)
     self:PlayGrowthVisuals()
     
-    print("Carrot Component Scale Updated:", scale)
+    -- print("Carrot Component Scale Updated:", scale)
 end
 
 function Carrot:PlayShakeAnimation()

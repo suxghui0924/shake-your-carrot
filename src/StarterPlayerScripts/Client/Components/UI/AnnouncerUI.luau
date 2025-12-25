@@ -25,6 +25,7 @@ function AnnouncerUI.new(props)
         Parent = parent,
         ResetOnSpawn = false,
         DisplayOrder = 100, -- High priority to be on top
+        IgnoreGuiInset = true, -- User requested: Very top
         
         [Children] = {
             scope:New "Frame" {
@@ -35,10 +36,11 @@ function AnnouncerUI.new(props)
                 BackgroundTransparency = 1,
                 
                 [Children] = {
+                    scope:New "UIPadding" { PaddingTop = UDim.new(0, 10) }, -- Slight padding from edge
                     scope:New "UIListLayout" {
                         SortOrder = Enum.SortOrder.LayoutOrder,
                         HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                        VerticalAlignment = Enum.VerticalAlignment.Center,
+                        VerticalAlignment = Enum.VerticalAlignment.Top, -- Align to top
                         Padding = UDim.new(0, 5) -- Fixed 5px gap
                     },
 

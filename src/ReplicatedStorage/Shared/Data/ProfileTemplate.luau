@@ -27,7 +27,7 @@ local CarrotSkins = {
 		AssetPath = "ReplicatedStorage.Assets.Carrots.황금 당근",
 		Color = Color3.fromRGB(255, 215, 0),
 		Material = Enum.Material.Neon,
-		Unlocked = true,
+		Unlocked = false, -- Locked for Shop
 		CoinPrice = 10000,
 		RobuxPrice = 1234567, -- Placeholder ProductID
 	},
@@ -40,7 +40,7 @@ local CarrotSkins = {
 		AssetPath = "ReplicatedStorage.Assets.Carrots.무지개 당근",
 		Color = Color3.fromRGB(255, 100, 255),
 		Material = Enum.Material.Neon,
-		Unlocked = true,
+		Unlocked = false, -- Locked for Shop
 		CoinPrice = 5000,
 		RobuxPrice = 2345678, -- Placeholder ProductID
 	},
@@ -53,7 +53,7 @@ local CarrotSkins = {
 		AssetPath = "ReplicatedStorage.Assets.Carrots.광란의 당근",
 		Color = Color3.fromRGB(255, 0, 0),
 		Material = Enum.Material.Neon,
-		Unlocked = true,
+		Unlocked = false, -- Locked for Shop
 		CoinPrice = 7500,
 		RobuxPrice = 3456789, -- Placeholder ProductID
 	},

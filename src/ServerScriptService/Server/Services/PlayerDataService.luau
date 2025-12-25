@@ -253,12 +253,12 @@ function PlayerDataService:OnPlayerRemoving(player: Player)
 end
 
 function PlayerDataService:Init()
-	print("[PlayerDataService] Init started")
+	-- print("[PlayerDataService] Init started")
 	self._playerProfiles = {}
 	self._playerConnections = {}
 
 	Players.PlayerAdded:Connect(function(player)
-		print("[PlayerDataService] PlayerAdded event:", player.Name)
+		-- print("[PlayerDataService] PlayerAdded event:", player.Name)
 		self:OnPlayerAdded(player)
 	end)
 
@@ -269,7 +269,7 @@ function PlayerDataService:Init()
 	-- Handle existing players
 	for _, player in ipairs(Players:GetPlayers()) do
 		task.spawn(function()
-			print("[PlayerDataService] Processing existing player:", player.Name)
+			-- print("[PlayerDataService] Processing existing player:", player.Name)
 			self:OnPlayerAdded(player)
 		end)
 	end

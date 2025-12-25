@@ -50,7 +50,7 @@ end
 
 function SkinService:OnPlayerAdded(player)
 	task.spawn(function()
-		print("[SkinService] Player added processing:", player.Name)
+		-- print("[SkinService] Player added processing:", player.Name)
 		
 		-- Wait for data to be ready
 		local profileData = PlayerDataService:GetData(player)
@@ -66,9 +66,7 @@ function SkinService:OnPlayerAdded(player)
 			return
 		end
 		
-local HttpService = game:GetService("HttpService")
-
--- ... (inside OnPlayerAdded)
+		local HttpService = game:GetService("HttpService")
 
 		-- Set initial attributes for UI
 		player:SetAttribute("EquippedSkin", profileData.EquippedSkin)
@@ -81,7 +79,7 @@ local HttpService = game:GetService("HttpService")
 		end)
 		if not func then warn("Failed to encode UnlockedSkins:", err) end
 		
-		print("[SkinService] Data loaded for:", player.Name, "Skin:", profileData.EquippedSkin)
+		-- print("[SkinService] Data loaded for:", player.Name, "Skin:", profileData.EquippedSkin)
 
 		-- Apply to character tools if player already has them
 		if player.Character then
@@ -89,7 +87,7 @@ local HttpService = game:GetService("HttpService")
 		end
 		
 		player.CharacterAdded:Connect(function(character)
-			print("[SkinService] Character spawned:", player.Name)
+			-- print("[SkinService] Character spawned:", player.Name)
 			task.wait(1) -- Wait a bit longer for default Roblox tools to load if any
 			self:ApplySkinToPlayerTools(player)
 		end)
@@ -124,7 +122,7 @@ function SkinService:EquipSkin(player, skinId)
 	-- Apply to all current tools
 	self:ApplySkinToPlayerTools(player)
 	
-	print("Equipped skin:", skinId, "for player:", player.Name)
+	-- print("Equipped skin:", skinId, "for player:", player.Name)
 end
 
 function SkinService:BuySkin(player, skinId)
@@ -159,7 +157,7 @@ function SkinService:BuySkin(player, skinId)
 	-- Update attributes
 	player:SetAttribute("Money", profileData.Money)
 	
-	print("Player", player.Name, "bought skin", skinId, "for", price, "coins")
+	-- print("Player", player.Name, "bought skin", skinId, "for", price, "coins")
 end
 
 function SkinService:ApplySkinToPlayerTools(player)
@@ -257,7 +255,7 @@ function SkinService:GiveSkinTool(player, skinId)
 			newTool.Parent = player:FindFirstChild("Backpack")
 		end
 		
-		print("[SkinService] Successfully found and gave skin:", skinId, "found at:", target:GetFullName())
+		-- print("[SkinService] Successfully found and gave skin:", skinId, "found at:", target:GetFullName())
 	else
 		warn("[SkinService] CRITICAL: Tool asset missing for:", skinId, "Path:", skinData.AssetPath)
 		
@@ -291,7 +289,7 @@ function SkinService:GetToolOwner(tool)
 end
 
 function SkinService:Start()
-	print("SkinService Started")
+	-- print("SkinService Started")
 end
 
 return SkinService

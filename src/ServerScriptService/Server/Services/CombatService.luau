@@ -33,12 +33,12 @@ function CombatService:Init()
         local aliveValue = settingsFolder:FindFirstChild("Alive")
         if aliveValue and aliveValue:IsA("ObjectValue") then
             aliveValue.Value = workspace
-            print("CombatService: HitboxClass 'Alive' set to Workspace.")
+            -- print("CombatService: HitboxClass 'Alive' set to Workspace.")
         else
-            warn("CombatService: 'Alive' ObjectValue not found in HitboxClass.Settings. Please configure it manually if needed.")
+            -- warn("CombatService: 'Alive' ObjectValue not found in HitboxClass.Settings. Please configure it manually if needed.")
         end
     else
-        warn("CombatService: HitboxClass 'Settings' folder not found. Please ensure the module is installed correctly.")
+        -- warn("CombatService: HitboxClass 'Settings' folder not found. Please ensure the module is installed correctly.")
     end
 
     Network.packets.carrotAttack.listen(function(data, player)
@@ -127,8 +127,8 @@ function CombatService:HandleAttack(player, attackType)
     
     hitbox:Start()
     
-    -- Cleanup after swing duration
-    task.delay(0.35, function()
+    -- Cleanup after swing duration (Fast duration for snappy feel)
+    task.delay(0.1, function()
         hitbox:Stop()
         hitbox:Destroy()
         hbPart:Destroy()
@@ -169,7 +169,7 @@ function CombatService:ApplyDamage(attacker, targetHumanoid, scale, attackType)
 end
 
 function CombatService:Start()
-    print("CombatService Started")
+    -- print("CombatService Started")
 end
 
 return CombatService

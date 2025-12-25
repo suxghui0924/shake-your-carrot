@@ -437,29 +437,42 @@ end
 function CarrotSkinUI:CreateGridItems()
 	return self.Scope:Computed(function(use)
 		local items = {}
+		local unlocked = use(self.UnlockedSkins)
+		local tab = use(self.Tab) -- "Skins" or "Shop"
 		
-		if use(self.Tab) == "Skins" then
-			-- Sort keys
-			local keys = {}
-			for id, _ in pairs(CarrotSkins) do
-				table.insert(keys, id)
+		-- Get all potential keys first
+		local keys = {}
+		for id, data in pairs(CarrotSkins) do
+			local isUnlocked = table.find(unlocked, id) or id == "Default"
+			
+			if tab == "Skins" then
+				-- Inventory: Only Show Unlocked
+				if isUnlocked then
+					table.insert(keys, id)
+				end
+			elseif tab == "Shop" then
+				-- Shop: Only Show Locked (that have a price)
+				if not isUnlocked and data.CoinPrice then
+					table.insert(keys, id)
+				end
 			end
-			table.sort(keys, function(a, b)
-				if a == "Default" then return true end
-				if b == "Default" then return false end
-				return CarrotSkins[a].Name < CarrotSkins[b].Name
-			end)
-
-			-- List Skins
-			for i, id in ipairs(keys) do
-				local card = self:CreateSkinCard(id, CarrotSkins[id])
-				card.LayoutOrder = i
-				table.insert(items, card)
-			end
-		else
-			-- Shop Items (Placeholder logic)
-			-- Can add shop items here later
 		end
+
+		-- Sort
+		table.sort(keys, function(a, b)
+			if a == "Default" then return true end
+			if b == "Default" then return false end
+			return CarrotSkins[a].Name < CarrotSkins[b].Name
+		end)
+
+		-- Create Cards
+		for i, id in ipairs(keys) do
+			local card = self:CreateSkinCard(id, CarrotSkins[id])
+			card.LayoutOrder = i
+			table.insert(items, card)
+		end
+		
+		-- If Shop is empty, maybe show a "All Collected!" message? (Optional, kept simple for now)
 		
 		return items
 	end)
@@ -496,7 +509,25 @@ function CarrotSkinUI:CreateSkinCard(id, skin)
 			-- Icon/Preview Image (3D Viewport)
             self:CreateMiniViewport(id),
 			
-			-- Labels
+			-- Lock Overlay (Draws over viewport)
+			self.Scope:New "Frame" {
+				Size = UDim2.fromScale(1, 1),
+				BackgroundColor3 = Color3.new(0, 0, 0),
+				BackgroundTransparency = 0.2, -- Dark overlay
+				Visible = self.Scope:Computed(function(use) return not use(isUnlocked) end),
+				[Children] = {
+					self.Scope:New "UICorner" { CornerRadius = UDim.new(0, 8) },
+					self.Scope:New "TextLabel" {
+						Text = "🔒",
+						TextSize = 24,
+						Position = UDim2.fromScale(0.5, 0.5),
+						AnchorPoint = Vector2.new(0.5, 0.5),
+						BackgroundTransparency = 1,
+					}
+				}
+			},
+
+			-- Labels (Draws on top of overlay)
 			self.Scope:New "TextLabel" {
 				Text = skin.Name,
 				Font = Enum.Font.FredokaOne,
@@ -510,16 +541,6 @@ function CarrotSkinUI:CreateSkinCard(id, skin)
                 [Children] = {
                     self.Scope:New "UIStroke" { Color = Color3.new(0,0,0), Thickness = 2, Transparency = 0.5 }
                 }
-			},
-			
-			-- Lock Icon
-			self.Scope:New "TextLabel" {
-				Text = "🔒",
-				TextSize = 24,
-				Visible = self.Scope:Computed(function(use) return not use(isUnlocked) end),
-				Position = UDim2.fromScale(0.5, 0.5),
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				BackgroundTransparency = 1,
 			}
 		}
 	}

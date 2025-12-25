@@ -30,8 +30,7 @@ function RoundService:Start()
             task.wait()
         end
     end)
-    
-    print("RoundService Started")
+    -- print("RoundService Started")
 end
 
 function RoundService:GameLoop()
@@ -74,7 +73,7 @@ function RoundService:BroadcastStatus(message)
 end
 
 function RoundService:StartRound()
-    print("Round Starting!")
+    -- print("Round Starting!")
     self:BroadcastStatus("GO!")
     
     -- Reset all players' growth
@@ -89,7 +88,7 @@ function RoundService:StartRound()
 end
 
 function RoundService:EndRound()
-    print("Round Ended!")
+    -- print("Round Ended!")
     self:BroadcastStatus("Time's Up!")
     task.wait(3) -- Short delay before intermission
 end

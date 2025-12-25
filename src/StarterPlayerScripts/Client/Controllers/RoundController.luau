@@ -45,7 +45,7 @@ function RoundController:Init()
         end
     end)
     
-    print("RoundController Initialized")
+    -- print("RoundController Initialized")
 end
 
 return RoundController
