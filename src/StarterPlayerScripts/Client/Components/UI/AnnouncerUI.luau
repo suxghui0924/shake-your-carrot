@@ -28,10 +28,10 @@ function AnnouncerUI.new(props)
     
     -- Splash Screen State
     local splashTransparency = scope:Value(1)
-    local splashString = scope:Spring(splashTransparency, 30, 1)
-	
+	local splashString = scope:Spring(splashTransparency, 30, 1)
 	-- Splash Animation Values (Scale/Rotation)
-	local splashScale = scope:Spring(scope:Value(0), 12, 0.6) -- Bouncy scale
+	local splashScaleGoal = scope:Value(0)
+	local splashScale = scope:Spring(splashScaleGoal, 12, 0.6) -- Bouncy scale
 	local splashRotation = scope:Value(0)
     
     -- Observe message for "GO!" to trigger splash
@@ -42,13 +42,21 @@ function AnnouncerUI.new(props)
             splashTransparency:set(0)
 			
 			-- Trigger Pop-in animation
-			splashScale:setPosition(0) -- Reset
-			splashScale:setVelocity(5) --- Force pop
-			splashScale:setTarget(1)
-			
+			splashScaleGoal:set(0, true) -- Force reset to 0 instantly if supported or just set
+            -- Fusion 0.3 Value:set(newValue, forceUpdate?) - usually just set(newValue)
+            -- To ensure animation plays, we need it to start at 0 and go to 1.
+            -- If it's already 0, just setting to 1 triggers spring.
+            -- If it was 1 (from previous round?), we reset to 0 then 1.
+            
+            splashScaleGoal:set(0)
+            -- Small delay inside frame or just rely on next update?
+            -- Let's just set to 1. The spring will travel 0->1.
+            splashScaleGoal:set(1)
+
             -- Wait for teleport to happen (approx 2s in server) + extra time
             task.delay(4, function()
                 splashTransparency:set(1)
+                splashScaleGoal:set(0) -- Reset scale for next time?
             end)
         end
     end)
