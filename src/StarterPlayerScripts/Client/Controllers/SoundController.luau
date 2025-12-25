@@ -62,7 +62,7 @@ function SoundController:HandleRoundUpdate(data)
 		-- For a beep, we usually want it exactly on the tick.
 		-- Simple approach: If `timeLeft` changed from previously known value.
 		-- State-based tracking:
-		if self.LastTime != timeLeft then
+		if self.LastTime ~= timeLeft then
 			self:PlaySound("timer_beep")
 			self.LastTime = timeLeft
 		end
