@@ -1,90 +1,122 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
+local Packages = ReplicatedStorage.Packages
 local Network = require(ReplicatedStorage.Shared.Network)
+local ShapecastHitbox = require(Packages.shapecasthitbox)
 
 local CombatService = {
     BASE_DAMAGE = 10,
     BASE_KNOCKBACK = 20,
+    Hitboxes = {}, -- Cache for hitboxes [Player] = Hitbox
 }
 
 function CombatService:Init()
     Network.packets.carrotAttack.listen(function(data, player)
         self:HandleAttack(player, data.attackType)
     end)
+    
+    Players.PlayerRemoving:Connect(function(player)
+        if self.Hitboxes[player] then
+            self.Hitboxes[player]:Destroy()
+            self.Hitboxes[player] = nil
+        end
+    end)
 end
-
-
 
 function CombatService:HandleAttack(player, attackType)
     local character = player.Character
     if not character then return end
     
-    local humanoid = character:FindFirstChild("Humanoid")
-    if not humanoid or humanoid.Health <= 0 then return end
+    local tool = character:FindFirstChildOfClass("Tool")
+    if not tool then return end
+    
+    local handle = tool:FindFirstChild("Handle") or tool:FindFirstChild("PrimaryPart") or character:FindFirstChild("RightHand")
+    if not handle then return end
+    
+    -- [1] Create DmgPoint Attachment if missing
+    local att = handle:FindFirstChild("DmgPoint")
+    if not att then
+        att = Instance.new("Attachment")
+        att.Name = "DmgPoint"
+        att.Position = Vector3.new(0, 0, 0) -- Center of handle? Adjust if needed.
+        att.Parent = handle
+    end
     
     local carrotScale = player:GetAttribute("CarrotScale") or 1.0
-    
-    -- Hit detection logic
-    -- Reach: Base 8 studs, scales with carrot size.
     local hitRadius = 2.5 * carrotScale
-    local hitDistance = 8 * carrotScale
+    
+    -- [2] Get or Create Hitbox
+    local hitbox = self.Hitboxes[player]
+    if not hitbox or hitbox.Instance ~= handle then -- Recreate if weapon changed
+        if hitbox then hitbox:Destroy() end
+        hitbox = ShapecastHitbox.new(handle)
+        self.Hitboxes[player] = hitbox
+    end
+    
+    -- [3] Configure Cast (Spherecast based on scale)
+    hitbox:SetCastData({
+        CastType = "Spherecast",
+        Radius = hitRadius,
+    })
+    
+    -- [4] Hit Logic
+    local hits = {} -- distinct hits per swing
+    
+    hitbox:OnHit(function(result)
+        local target = result.Instance
+        local humanoid = target.Parent:FindFirstChild("Humanoid") or target.Parent.Parent:FindFirstChild("Humanoid")
+        
+        if humanoid and humanoid.Health > 0 then
+            local targetChar = humanoid.Parent
+            if hits[targetChar] then return end -- Already hit this enemy this swing
+            hits[targetChar] = true
+            
+            local targetPlayer = Players:GetPlayerFromCharacter(targetChar)
+            if targetPlayer and targetPlayer.Team == player.Team and player.Team ~= nil then
+                return -- Friendly fire
+            end
+            
+            self:ApplyDamage(player, humanoid, carrotScale, attackType)
+        end
+    end)
+    
+    -- [5] Start & Cleanup
+    hitbox:HitStart(0.35) -- Duration of swing
+    
+    hitbox:OnStopped(function(cleanup)
+        cleanup() -- Removes OnHit listeners
+        table.clear(hits)
+        -- We KEEP the hitbox instance for next swing, don't Destroy() it here
+    end)
+    
+    -- [VISUALIZE HITBOX (Debug/Feedback)]
+    -- Keeping the visualizer as User requested it, but maybe ShapecastHitbox has one?
+    -- User asked for "Visualize" previously. I'll keep the simple Box for now as instant feedback,
+    -- though it might not perfectly match the temporal cast.
+    -- Actually, ShapecastHitbox usually has `ShapecastHitbox.Settings.Debug_Visible = true` but that's global.
+    -- Let's stick to our own feedback for now or rely on the purely invisible mechanic if reliable.
+    -- I will comment out the old One-shot raycast but keep the visual feedback part for 'feel'.
     
     local origin = character.PrimaryPart.Position
-    local direction = character.PrimaryPart.CFrame.LookVector * hitDistance
+    local direction = character.PrimaryPart.CFrame.LookVector * (8 * carrotScale)
     
-    -- Lunge Effect: Help slow players close the gap
+    -- Lunge
     local lungeForce = 15 * carrotScale
     character.PrimaryPart:ApplyImpulse(character.PrimaryPart.CFrame.LookVector * lungeForce * character.PrimaryPart.AssemblyMass)
     
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterDescendantsInstances = {character}
-    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-    
-    local result = workspace:Spherecast(origin, hitRadius, direction, raycastParams)
-    
-    -- [VISUALIZE HITBOX]
+    -- Old Visualizer (Red Box) logic
     local viz = Instance.new("Part")
     viz.Anchored = true
     viz.CanCollide = false
     viz.Material = Enum.Material.Neon
     viz.Color = Color3.fromRGB(255, 0, 0)
-    viz.Transparency = 0.7
-    
-    local dist = direction.Magnitude
-    local fwd = direction.Unit
-    local center = origin + (fwd * (dist / 2))
-    
-    -- Spherecast is a swept sphere. Approximating with a cylinder/capsule look is hard with just a part.
-    -- A cylinder along the ray is decent.
-    viz.Shape = Enum.PartType.Cylinder
-    viz.Size = Vector3.new(dist, hitRadius*2, hitRadius*2) -- Cylinder uses X as length in recent updates? Or Y? Actually Cylinder mesh rotates.
-    -- Let's just use a Block for simplicity covering the area, or a series of spheres.
-    -- Better: CFrame.lookAt(center, center + fwd) * CFrame.Angles(0, math.rad(90), 0) for Cylinder?
-    -- Let's stick to a simple block representing the ray length + radius
+    viz.Transparency = 0.8
     viz.Shape = Enum.PartType.Block
-    viz.Size = Vector3.new(hitRadius*2, hitRadius*2, dist)
-    viz.CFrame = CFrame.lookAt(center, center + fwd)
-    
+    viz.Size = Vector3.new(hitRadius*2, hitRadius*2, direction.Magnitude)
+    viz.CFrame = CFrame.lookAt(origin + direction/2, origin + direction)
     viz.Parent = workspace
     game:GetService("Debris"):AddItem(viz, 0.2)
-    
-    if result and result.Instance then
-        local targetHumanoid = result.Instance.Parent:FindFirstChild("Humanoid")
-        if not targetHumanoid then
-            targetHumanoid = result.Instance.Parent.Parent:FindFirstChild("Humanoid")
-        end
-        
-        if targetHumanoid and targetHumanoid.Health > 0 then
-            local targetPlayer = Players:GetPlayerFromCharacter(targetHumanoid.Parent)
-            if targetPlayer and targetPlayer.Team == player.Team and player.Team ~= nil then
-                -- Friendly fire ignored
-                return
-            end
-            
-            self:ApplyDamage(player, targetHumanoid, carrotScale, attackType)
-        end
-    end
 end
 
 function CombatService:ApplyDamage(attacker, targetHumanoid, scale, attackType)
