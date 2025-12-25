@@ -15,7 +15,7 @@ local QuestController = {
 }
 
 function QuestController:Init()
-	self.scope = Fusion.scoped({})
+	self.scope = Fusion.scoped(Fusion)
 	self.quests = self.scope:Value({})
 	self.isVisible = self.scope:Value(false)
 
