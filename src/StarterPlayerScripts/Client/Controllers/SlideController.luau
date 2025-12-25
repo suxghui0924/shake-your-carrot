@@ -69,7 +69,7 @@ function SlideController:Init()
 			self:StartSlide()
 		elseif input.KeyCode == Enum.KeyCode.Space then
 			if isSliding then
-				self:CancelSlide()
+				self:CancelSlide(true) -- True for Jump Cancel
 			end
 		end
 	end)
@@ -165,7 +165,6 @@ function SlideController:StartSlide()
 	slideVelocity = Instance.new("BodyVelocity")
 	slideVelocity.Name = "SlideVelocity"
 	slideVelocity.MaxForce = Vector3.new(40000, 0, 40000)
-	slideVelocity.Velocity = rootPart.CFrame.LookVector * Settings.BaseSpeed
 	slideVelocity.Parent = rootPart
 	
 	alignGyro = Instance.new("BodyGyro")
@@ -205,8 +204,12 @@ function SlideController:StartSlide()
 			alignGyro.CFrame = CFrame.fromMatrix(rootPart.Position, rightVec, upVec, newFace)
 		end
 		
-		-- Velocity Calc
-		slideVelocity.Velocity = rootPart.CFrame.LookVector * (Settings.BaseSpeed * currentMultiplier)
+		-- Velocity Calc with Size Penalty
+		local scale = player:GetAttribute("CarrotScale") or 1.0
+		local scalePenalty = math.max(0, (scale - 1.0) * 10) -- Significant penalty for size
+		local adjustedBaseSpeed = math.max(20, Settings.BaseSpeed - scalePenalty)
+		
+		slideVelocity.Velocity = rootPart.CFrame.LookVector * (adjustedBaseSpeed * currentMultiplier)
 		
 		if verticalChange < 0.1 and verticalChange > -0.1 then -- Flat
 			currentMultiplier = math.clamp(currentMultiplier - Settings.SpeedChangeRate.Forward * dt, 0, Settings.MaxMultiplier)
@@ -249,7 +252,7 @@ function SlideController:StopSlide()
 	end)
 end
 
-function SlideController:CancelSlide()
+function SlideController:CancelSlide(isJump)
 	-- Play Cancel Sound
 	if slideCancelSound then
 		slideCancelSound:Play()
@@ -260,7 +263,13 @@ function SlideController:CancelSlide()
 	if Settings.PushOnCancel and rootPart then
 		local push = Instance.new("BodyVelocity")
 		push.MaxForce = Vector3.new(40000, 40000, 40000)
-		push.Velocity = (rootPart.CFrame.LookVector * (Settings.PushVelocity.Forward * currentMultiplier)) + (Vector3.new(0,1,0) * Settings.PushVelocity.Up)
+		
+		local upForce = Settings.PushVelocity.Up
+		if isJump then
+			upForce = upForce * 1.8 -- Super Jump Boost (80% higher)
+		end
+		
+		push.Velocity = (rootPart.CFrame.LookVector * (Settings.PushVelocity.Forward * currentMultiplier)) + (Vector3.new(0,1,0) * upForce)
 		push.Parent = rootPart
 		Debris:AddItem(push, 0.15)
 	end
