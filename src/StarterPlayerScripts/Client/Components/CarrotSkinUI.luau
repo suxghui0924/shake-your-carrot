@@ -1,21 +1,14 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local ContextActionService = game:GetService("ContextActionService")
 
 local Packages = ReplicatedStorage.Packages
 local Fusion = require(Packages.Fusion)
 local Trove = require(Packages.Trove)
 local CarrotSkins = require(ReplicatedStorage.Shared.Data.CarrotSkins)
 local Network = require(ReplicatedStorage.Shared.Network)
-local Monetizations = require(ReplicatedStorage.Shared.Monetizations)
-local MarketplaceService = game:GetService("MarketplaceService")
 
 local Children = Fusion.Children
-local New = Fusion.New
-local Value = Fusion.Value
-local Computed = Fusion.Computed
-local Observer = Fusion.Observer
 local peek = Fusion.peek
 
 local CarrotSkinUI = {}
@@ -51,6 +44,7 @@ local RARITY_COLORS = {
 function CarrotSkinUI.new()
 	local self = setmetatable({}, CarrotSkinUI)
 	self._trove = Trove.new()
+	self:Init()
 	return self
 end
 
