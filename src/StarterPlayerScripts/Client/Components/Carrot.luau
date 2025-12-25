@@ -8,6 +8,8 @@ local Component = require(Packages.Component)
 local Trove = require(Packages.Trove)
 local Network = require(ReplicatedStorage.Shared.Network)
 local Sounds = require(ReplicatedStorage.Shared.Sounds)
+local HitboxClass = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("HitboxClass"))
+
 
 local Carrot = Component.new({
     Tag = "Carrot",
@@ -279,7 +281,7 @@ function Carrot:PlayAttackAnimation(step)
     end
 end
 
-local HitboxClass = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("HitboxClass"))
+
 
 function Carrot:PerformAttack(attackType)
 	-- Network.packets.carrotAttack.send({ attackType = attackType }) -- Removed: Only send hits now, or send for animation replication if needed?

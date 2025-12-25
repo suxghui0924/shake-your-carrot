@@ -17,8 +17,8 @@ local CombatService = {
 
 function CombatService:Init()
 	-- Configure HitboxClass (Physical Values inside the Module)
-	-- (HitboxClass is no longer used directly here, but config might be needed if shared?)
-	-- Removed unused code related to HitboxClass setup to clean up.
+	-- We must require it on the server at least once to create the "HitboxClassRemote" for clients.
+	local HitboxClass = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("HitboxClass"))
 
 	Network.packets.carrotAttack.listen(function(data, player)
 		-- [Lunge Logic on Swing]
