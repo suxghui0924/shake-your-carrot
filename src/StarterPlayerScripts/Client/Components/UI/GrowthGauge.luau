@@ -25,35 +25,100 @@ function GrowthGauge:Create(scope)
         
         [Fusion.Children] = {
             New "Frame" {
-                Name = "MainFrame",
-                Position = UDim2.new(0, 20, 0.5, -100),
-                Size = UDim2.new(0, 40, 0, 200),
-                BackgroundColor3 = Color3.fromRGB(50, 50, 50),
-                BorderSizePixel = 0,
+                Name = "MainContainer",
+                Position = UDim2.new(0, 20, 1, -20),
+                Size = UDim2.fromOffset(250, 80),
+                AnchorPoint = Vector2.new(0, 1),
+                BackgroundTransparency = 1,
                 
                 [Fusion.Children] = {
+                    -- Profile Circle (Placeholder for player Image)
                     New "Frame" {
-                        Name = "Fill",
-                        Position = UDim2.new(0, 0, 1, 0),
-                        Size = Computed(function()
-                            local scale = carrotScale:get()
-                            local progress = math.min(1, (scale - 1) / 4) -- Max visual at 5x scale
-                            return UDim2.new(1, 0, -progress, 0)
-                        end),
-                        AnchorPoint = Vector2.new(0, 1),
-                        BackgroundColor3 = Color3.fromRGB(230, 126, 34),
-                        BorderSizePixel = 0,
+                        Name = "ProfileCircle",
+                        Size = UDim2.fromOffset(70, 70),
+                        Position = UDim2.new(0, 0, 0.5, 0),
+                        AnchorPoint = Vector2.new(0, 0.5),
+                        BackgroundColor3 = Color3.fromRGB(30, 30, 30),
+                        
+                        [Fusion.Children] = {
+                            New "UICorner" { CornerRadius = UDim.new(1, 0) },
+                            New "UIStroke" { 
+                                Color = Color3.fromRGB(230, 126, 34),
+                                Thickness = 3 
+                            },
+                        }
                     },
-                    New "TextLabel" {
-                        Text = Computed(function()
-                            return string.format("x%.1f", carrotScale:get())
-                        end),
-                        Size = UDim2.new(1, 0, 0, 30),
-                        Position = UDim2.new(0, 0, 1, 10),
-                        BackgroundTransparency = 1,
-                        TextColor3 = Color3.fromRGB(255, 255, 255),
-                        TextSize = 20,
-                        Font = Enum.Font.GothamBold,
+                    
+                    -- Content Area (Name + Money + Gauge)
+                    New "Frame" {
+                        Name = "InfoPanel",
+                        Size = UDim2.new(1, -60, 0, 55),
+                        Position = UDim2.new(0, 50, 0.5, 0),
+                        AnchorPoint = Vector2.new(0, 0.5),
+                        BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+                        BackgroundTransparency = 0.2,
+                        ZIndex = -1, -- Behind circle
+                        
+                        [Fusion.Children] = {
+                            New "UICorner" { CornerRadius = UDim.new(0, 12) },
+                            
+                            -- Player Name
+                            New "TextLabel" {
+                                Name = "PlayerName",
+                                Text = player.Name,
+                                Size = UDim2.new(1, -20, 0, 20),
+                                Position = UDim2.new(0, 30, 0, 8),
+                                TextXAlignment = Enum.TextXAlignment.Left,
+                                TextColor3 = Color3.fromRGB(255, 255, 255),
+                                Font = Enum.Font.GothamBold,
+                                TextSize = 16,
+                                BackgroundTransparency = 1
+                            },
+                            
+                            -- Growth Bar Background
+                            New "Frame" {
+                                Name = "GrowthBarBG",
+                                Size = UDim2.new(1, -40, 0, 8),
+                                Position = UDim2.new(0, 30, 1, -15),
+                                BackgroundColor3 = Color3.fromRGB(50, 50, 50),
+                                
+                               [Fusion.Children] = {
+                                    New "UICorner" { CornerRadius = UDim.new(1, 0) },
+                                    
+                                    -- Growth Bar Fill
+                                    New "Frame" {
+                                        Name = "GrowthBarFill",
+                                        Size = Computed(function()
+                                            local scale = carrotScale:get()
+                                            -- Progress: (scale - 1) / 4 => 0 to 1 as scale goes 1 to 5
+                                            local progress = math.clamp((scale - 1) / 4, 0, 1)
+                                            return UDim2.fromScale(progress, 1)
+                                        end),
+                                        BackgroundColor3 = Color3.fromRGB(230, 126, 34), -- Carrot Orange
+                                        
+                                        [Fusion.Children] = {
+                                            New "UICorner" { CornerRadius = UDim.new(1, 0) }
+                                        }
+                                    }
+                                } 
+                            },
+                            
+                            -- Scale Text (e.g. "x1.5")
+                            New "TextLabel" {
+                                Name = "ScaleText",
+                                Text = Computed(function()
+                                   return string.format("x%.1f", carrotScale:get()) 
+                                end),
+                                Size = UDim2.new(0, 40, 0, 20),
+                                Position = UDim2.new(1, -10, 0, 8),
+                                AnchorPoint = Vector2.new(1, 0),
+                                TextXAlignment = Enum.TextXAlignment.Right,
+                                TextColor3 = Color3.fromRGB(255, 200, 50),
+                                Font = Enum.Font.GothamBold,
+                                TextSize = 14,
+                                BackgroundTransparency = 1
+                            }
+                        }
                     }
                 }
             }

@@ -60,7 +60,7 @@ function AnnouncerUI.new(props)
                         end),
                         TextColor3 = Color3.fromRGB(255, 255, 255),
                         Font = Enum.Font.FredokaOne,
-                        TextSize = 24,
+                        TextSize = 32, -- Increased from 24
                         TextStrokeTransparency = 0.5,
                         
                         [Children] = {
@@ -99,7 +99,7 @@ function AnnouncerUI.new(props)
                             return Color3.fromRGB(255, 200, 50) -- Normal Gold-ish
                         end),
                         Font = Enum.Font.FredokaOne,
-                        TextSize = 48,
+                        TextSize = 32, -- Decreased from 48
                         TextStrokeTransparency = 0,
                         
                         [Children] = {
