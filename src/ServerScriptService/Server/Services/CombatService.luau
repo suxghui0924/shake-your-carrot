@@ -43,6 +43,32 @@ function CombatService:HandleAttack(player, attackType)
     
     local result = workspace:Spherecast(origin, hitRadius, direction, raycastParams)
     
+    -- [VISUALIZE HITBOX]
+    local viz = Instance.new("Part")
+    viz.Anchored = true
+    viz.CanCollide = false
+    viz.Material = Enum.Material.Neon
+    viz.Color = Color3.fromRGB(255, 0, 0)
+    viz.Transparency = 0.7
+    
+    local dist = direction.Magnitude
+    local fwd = direction.Unit
+    local center = origin + (fwd * (dist / 2))
+    
+    -- Spherecast is a swept sphere. Approximating with a cylinder/capsule look is hard with just a part.
+    -- A cylinder along the ray is decent.
+    viz.Shape = Enum.PartType.Cylinder
+    viz.Size = Vector3.new(dist, hitRadius*2, hitRadius*2) -- Cylinder uses X as length in recent updates? Or Y? Actually Cylinder mesh rotates.
+    -- Let's just use a Block for simplicity covering the area, or a series of spheres.
+    -- Better: CFrame.lookAt(center, center + fwd) * CFrame.Angles(0, math.rad(90), 0) for Cylinder?
+    -- Let's stick to a simple block representing the ray length + radius
+    viz.Shape = Enum.PartType.Block
+    viz.Size = Vector3.new(hitRadius*2, hitRadius*2, dist)
+    viz.CFrame = CFrame.lookAt(center, center + fwd)
+    
+    viz.Parent = workspace
+    game:GetService("Debris"):AddItem(viz, 0.2)
+    
     if result and result.Instance then
         local targetHumanoid = result.Instance.Parent:FindFirstChild("Humanoid")
         if not targetHumanoid then

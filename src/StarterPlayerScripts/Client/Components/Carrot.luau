@@ -342,8 +342,17 @@ function Carrot:PlayGrowthVisuals()
 end
 
 function Carrot:PlayAttackFeedback(attackType)
-    -- Placeholder for per-tool animations
-    print("Carrot Attack Feedback:", attackType)
+    local soundConfig = Sounds.Swing
+    if soundConfig then
+        local sound = Instance.new("Sound")
+        sound.SoundId = soundConfig.SoundId
+        sound.Volume = soundConfig.Volume or 1
+        -- Random pitch for variety
+        sound.PlaybackSpeed = 0.9 + (math.random() * 0.2)
+        sound.Parent = self.Instance.PrimaryPart or self.Instance:FindFirstChild("Handle") or self.Instance:FindFirstChildOfClass("BasePart")
+        sound:Play()
+        Debris:AddItem(sound, 2)
+    end
 end
 
 function Carrot:Stop()

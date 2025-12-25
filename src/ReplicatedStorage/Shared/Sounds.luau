@@ -7,6 +7,7 @@ local Sounds = {
     typewriter = { SoundId = "rbxassetid://147982968", Volume = 1 },
     Scary = { SoundId = "rbxassetid://129098116998483", Volume = 1 },
     Jjuuk = { SoundId = "rbxassetid://139020562647289", Volume = 1 }, -- Cartoon stretch/spring sound
+	Swing = { SoundId = "rbxassetid://101467914599270", Volume = 1 },
 }
 
 return Sounds
