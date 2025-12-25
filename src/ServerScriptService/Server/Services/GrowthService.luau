@@ -79,7 +79,9 @@ function GrowthService:GrowCarrot(player)
 	local maxScale = 3.0
 	
 	-- Growth rate: 5% per shake (1/20) as per GDD
-	local nextScale = currentScale * 1.05
+	local multiplier = player:GetAttribute("GrowthMultiplier") or 1.0
+	local growthRate = 0.05 * multiplier
+	local nextScale = currentScale * (1 + growthRate)
 	
 	-- Clamp to max size
 	nextScale = math.min(nextScale, maxScale)

@@ -1,6 +1,6 @@
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
 
-local LoadingScreen = require(script.Parent.Parent.Components.LoadingScreen)
+local LoadingScreen = require(script.Parent.Parent.Components.UI.LoadingScreen)
 
 local LoadingController = {}
 
