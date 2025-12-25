@@ -1,11 +1,13 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 
 local Packages = ReplicatedStorage.Packages
 local Fusion = require(Packages.Fusion)
 local Trove = require(Packages.Trove)
-local CarrotSkins = require(ReplicatedStorage.Shared.Data.CarrotSkins)
+local ProfileTemplateModule = require(ReplicatedStorage.Shared.Data.ProfileTemplate)
+local CarrotSkins = ProfileTemplateModule.Skins
 local Network = require(ReplicatedStorage.Shared.Network)
 
 local Children = Fusion.Children
@@ -53,21 +55,34 @@ function CarrotSkinUI:Init()
 	self.Scope = Fusion.scoped(Fusion)
 	
 	-- [[ STATE ]]
-	self.IsOpen = self.Scope:Value(false)
+	self.IsOpen = self.Scope:Value(true)
 	self.Tab = self.Scope:Value("Skins") -- "Skins" | "Shop"
 	
 	self.SelectedSkin = self.Scope:Value("Default")
 	
 	-- Player Attributes (Synced)
+	-- Player Attributes (Synced)
 	self.EquippedSkin = self.Scope:Value(player:GetAttribute("EquippedSkin") or "Default")
-	self.UnlockedSkins = self.Scope:Value(player:GetAttribute("UnlockedSkins") or {"Default"})
+	
+	-- Decode JSON for unlocked skins
+	local function getUnlockedSkins()
+		local attr = player:GetAttribute("UnlockedSkins")
+		if type(attr) == "string" then
+			local success, result = pcall(function() return HttpService:JSONDecode(attr) end)
+			if success and type(result) == "table" then return result end
+		end
+		return {"Default"}
+	end
+	
+	self.UnlockedSkins = self.Scope:Value(getUnlockedSkins())
 	self.Coins = self.Scope:Value(player:GetAttribute("Money") or 0)
 	self.CarrotScale = self.Scope:Value(player:GetAttribute("CarrotScale") or 1.0)
 	
 	-- Listeners
 	self._trove:Connect(player.AttributeChanged, function(attr)
 		if attr == "EquippedSkin" then self.EquippedSkin:set(player:GetAttribute(attr))
-		elseif attr == "UnlockedSkins" then self.UnlockedSkins:set(player:GetAttribute(attr))
+		elseif attr == "UnlockedSkins" then 
+			self.UnlockedSkins:set(getUnlockedSkins())
 		elseif attr == "Money" then self.Coins:set(player:GetAttribute(attr))
 		elseif attr == "CarrotScale" then self.CarrotScale:set(player:GetAttribute(attr))
 		end
@@ -377,9 +392,22 @@ function CarrotSkinUI:CreateGridItems()
 		local items = {}
 		
 		if use(self.Tab) == "Skins" then
+			-- Sort keys
+			local keys = {}
+			for id, _ in pairs(CarrotSkins) do
+				table.insert(keys, id)
+			end
+			table.sort(keys, function(a, b)
+				if a == "Default" then return true end
+				if b == "Default" then return false end
+				return CarrotSkins[a].Name < CarrotSkins[b].Name
+			end)
+
 			-- List Skins
-			for id, skin in pairs(CarrotSkins) do
-				table.insert(items, self:CreateSkinCard(id, skin))
+			for i, id in ipairs(keys) do
+				local card = self:CreateSkinCard(id, CarrotSkins[id])
+				card.LayoutOrder = i
+				table.insert(items, card)
 			end
 		else
 			-- Shop Items (Placeholder logic)
@@ -547,67 +575,120 @@ function CarrotSkinUI:CreateViewport()
 	local cam = Instance.new("Camera")
 	cam.FieldOfView = 50
 	
+	local currentDist = 5
+	
+	local function updateCamera()
+		local angle = peek(self.PreviewRotation)
+		-- Rotate camera around center
+		local rot = CFrame.Angles(0, math.rad(angle), 0)
+		local tilt = CFrame.Angles(math.rad(-15), 0, 0)
+		cam.CFrame = CFrame.new(0, 0, 0) * rot * tilt * CFrame.new(0, 0, currentDist)
+	end
+
 	local function update()
 		world:ClearAllChildren()
 		local id = peek(self.SelectedSkin)
 		local skin = CarrotSkins[id]
 		if not skin then return end
 		
-		-- Asset Loader (Simplified for brevity)
-		local asset
-		local pathParts = string.split(skin.AssetPath, ".")
-		local target = game
-		for _, part in ipairs(pathParts) do
-			target = target:FindFirstChild(part)
-			if not target then break end
+		-- Asset Loader Helper
+		local function getAssetFromPath(path)
+			local segments = string.split(path, ".")
+			local current = game
+			for _, segment in ipairs(segments) do
+				current = current:FindFirstChild(segment)
+				if not current then return nil end
+			end
+			return current
 		end
-		
-		if target then
-			asset = target:Clone()
+
+		local asset = getAssetFromPath(skin.AssetPath)
+		if not asset then
+			local folder = ReplicatedStorage:FindFirstChild("Assets") and ReplicatedStorage.Assets:FindFirstChild("Carrots")
+			if folder then
+				asset = folder:FindFirstChild(skin.Name)
+			end
 		end
 		
 		if asset then
+			asset = asset:Clone()
 			asset.Parent = world
-			if asset:IsA("Model") then
-				local cf, size = asset:GetBoundingBox()
-				asset:PivotTo(CFrame.new(-cf.Position))
-				cam.CFrame = CFrame.new(Vector3.new(0, 0, size.Magnitude*2), Vector3.new(0,0,0)) * CFrame.Angles(math.rad(-10), math.rad(45), 0)
+			
+			-- Manual Bounding Box & Centering
+			local min = Vector3.new(math.huge, math.huge, math.huge)
+			local max = Vector3.new(-math.huge, -math.huge, -math.huge)
+			local parts = {}
+			
+			for _, d in ipairs(asset:GetDescendants()) do
+				if d:IsA("BasePart") then
+					table.insert(parts, d)
+					-- Ensure anchored for viewport
+					d.Anchored = true
+					
+					local size = d.Size
+					local cf = d.CFrame
+					local corners = {
+						cf * Vector3.new(size.X/2, size.Y/2, size.Z/2),
+						cf * Vector3.new(size.X/2, size.Y/2, -size.Z/2),
+						cf * Vector3.new(size.X/2, -size.Y/2, size.Z/2),
+						cf * Vector3.new(size.X/2, -size.Y/2, -size.Z/2),
+						cf * Vector3.new(-size.X/2, size.Y/2, size.Z/2),
+						cf * Vector3.new(-size.X/2, size.Y/2, -size.Z/2),
+						cf * Vector3.new(-size.X/2, -size.Y/2, size.Z/2),
+						cf * Vector3.new(-size.X/2, -size.Y/2, -size.Z/2),
+					}
+					for _, c in ipairs(corners) do
+						min = Vector3.new(math.min(min.X, c.X), math.min(min.Y, c.Y), math.min(min.Z, c.Z))
+						max = Vector3.new(math.max(max.X, c.X), math.max(max.Y, c.Y), math.max(max.Z, c.Z))
+					end
+				end
+			end
+			
+			if #parts > 0 then
+				local center = (min + max) / 2
+				local size = max - min
+				local offset = -center
+				
+				-- Shift all parts to origin
+				for _, p in ipairs(parts) do
+					p.CFrame = p.CFrame + offset
+				end
+				
+				currentDist = math.max(size.Magnitude, 3) * 1.2
 			else
-				asset.CFrame = CFrame.new(0,0,0)
-				cam.CFrame = CFrame.new(Vector3.new(0, 0, asset.Size.Magnitude*2), Vector3.new(0,0,0)) * CFrame.Angles(math.rad(-10), math.rad(45), 0)
+				-- No parts found?
+				currentDist = 5
 			end
 		else
-			-- Red Cube Fail
+			-- Red Part Fail
 			local box = Instance.new("Part")
-			box.Color = Color3.fromRGB(255,50,50)
-			box.Size = Vector3.new(1,1,1)
+			box.Color = Color3.fromRGB(255, 50, 50)
+			box.Size = Vector3.new(1.5, 1.5, 1.5)
 			box.Material = Enum.Material.Neon
 			box.Parent = world
-			cam.CFrame = CFrame.new(0,0,4)
+			currentDist = 5
 		end
+		updateCamera()
 	end
 	
 	self._trove:Add(self.Scope:Observer(self.SelectedSkin):onChange(update))
 	task.defer(update)
 	
-	-- Rotate
-	self._trove:Add(self.Scope:Observer(self.PreviewRotation):onChange(function()
-		local _ = peek(self.PreviewRotation)
-		for _, c in ipairs(world:GetChildren()) do
-			if c:IsA("Model") then
-				c:PivotTo(c:GetPivot() * CFrame.Angles(0, math.rad(1), 0))
-			elseif c:IsA("BasePart") then
-				c.CFrame = c.CFrame * CFrame.Angles(0, math.rad(1), 0)
-			end
-		end
-	end))
+	-- Rotate Camera
+	self._trove:Add(self.Scope:Observer(self.PreviewRotation):onChange(updateCamera))
 	
 	return self.Scope:New "ViewportFrame" {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
 		CurrentCamera = cam,
+		Ambient = Color3.fromRGB(150, 150, 150),
+		LightColor = Color3.fromRGB(255, 255, 255),
+		LightDirection = Vector3.new(1, 1, 1),
 		[Children] = { world }
 	}
 end
+
+-- Instantiate singleton
+CarrotSkinUI.new()
 
 return CarrotSkinUI

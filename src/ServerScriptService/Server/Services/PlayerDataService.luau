@@ -8,10 +8,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- 패키지, 모듈
 local ProfileService = require(ServerStorage.ServerPackages.ProfileService)
-local ProfileTemplate = require(ReplicatedStorage.Shared.Data.ProfileTemplate)
+local ProfileTemplateModule = require(ReplicatedStorage.Shared.Data.ProfileTemplate)
+local ProfileTemplate = ProfileTemplateModule.Template
 
 -- 상수
-local PROFILE_STORE_KEY = "PlayerData-v4"
+local PROFILE_STORE_KEY = "PlayerData-v5"
 local KICK_MESSAGES = {
 	DATA_LOAD_FAILED = "데이터 로딩 도중 오류가 발생했습니다, 다시 시도해주세요.",
 	DATA_CREATE_FAILED = "데이터 생성 도중 오류가 발생했습니다, 다시 시도해주세요.",
@@ -20,7 +21,7 @@ local KICK_MESSAGES = {
 
 -- 타입 정의
 local SharedTypes = require(ReplicatedStorage.Shared.Data.ProfileTemplate)
-type ProfileData = typeof(SharedTypes)
+type ProfileData = typeof(SharedTypes.Template)
 
 export type Profile = {
 	Data: ProfileData,
@@ -37,6 +38,9 @@ local PlayerDataService = {
 }
 
 local ProfileStore = ProfileService.GetProfileStore(PROFILE_STORE_KEY, ProfileTemplate)
+if RunService:IsStudio() then
+	ProfileStore = ProfileStore.Mock
+end
 
 local function getProfileKey(userId: number)
 	return "Player_" .. userId
@@ -248,11 +252,13 @@ function PlayerDataService:OnPlayerRemoving(player: Player)
 	end
 end
 
-function PlayerDataService:OnStart()
+function PlayerDataService:Init()
+	print("[PlayerDataService] Init started")
 	self._playerProfiles = {}
 	self._playerConnections = {}
 
 	Players.PlayerAdded:Connect(function(player)
+		print("[PlayerDataService] PlayerAdded event:", player.Name)
 		self:OnPlayerAdded(player)
 	end)
 
@@ -260,8 +266,10 @@ function PlayerDataService:OnStart()
 		self:OnPlayerRemoving(player)
 	end)
 
+	-- Handle existing players
 	for _, player in ipairs(Players:GetPlayers()) do
 		task.spawn(function()
+			print("[PlayerDataService] Processing existing player:", player.Name)
 			self:OnPlayerAdded(player)
 		end)
 	end

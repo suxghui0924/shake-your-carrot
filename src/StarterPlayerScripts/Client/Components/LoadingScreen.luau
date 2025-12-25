@@ -27,7 +27,6 @@ function LoadingScreen.new()
 	local PASTEL_BLUE = Color3.fromRGB(180, 220, 240)
 	local CREAM = Color3.fromRGB(255, 250, 240)
 	local BROWN_STROKE = Color3.fromRGB(100, 70, 50)
-	local CARROT_ORANGE = Color3.fromRGB(255, 140, 50)
 	
 	-- Animations
 	local transparency = self.Scope:Spring(self.Scope:Computed(function(use)
