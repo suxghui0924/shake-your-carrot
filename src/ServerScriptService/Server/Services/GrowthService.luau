@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 
 local Network = require(ReplicatedStorage.Shared.Network)
+local QuestService = require(script.Parent.QuestService)
 
 local GrowthService = {
     Growths = {}, -- [Player] = CurrentScale
@@ -84,7 +85,11 @@ function GrowthService:GrowCarrot(player)
 	nextScale = math.min(nextScale, maxScale)
 	
 	self.Growths[player] = nextScale
+	self.Growths[player] = nextScale
 	self:ApplyScale(player, nextScale)
+	
+	-- Quest Progress
+	QuestService:UpdateProgress(player, "Shake", 1)
 end
 
 function GrowthService:ResetGrowth(player)

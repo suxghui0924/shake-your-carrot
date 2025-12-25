@@ -62,6 +62,16 @@ return ByteNetMax.defineNamespace("Network", function()
 					stats = ByteNetMax.optional(ByteNetMax.string), -- JSON encoded { {Name="Player1", Kills=5, Deaths=2}, ... }
 				}),
 			}),
+			questUpdate = ByteNetMax.definePacket({
+				value = ByteNetMax.struct({
+					quests = ByteNetMax.string, -- JSON encoded quest data for the client
+				}),
+			}),
+			claimQuestReward = ByteNetMax.definePacket({
+				value = ByteNetMax.struct({
+					questId = ByteNetMax.string,
+				}),
+			}),
 		},
 		queries = {
 			getLeaderboard = ByteNetMax.defineQuery({

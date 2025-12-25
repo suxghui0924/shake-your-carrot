@@ -6,7 +6,9 @@ local Network = require(ReplicatedStorage.Shared.Network)
 -- Attempt to get GrowthService; assuming it's a module in the same directory or accessible via _G if lazy loaded.
 -- For now, we'll try to require it if we can find it, or use a dependency injection pattern if that's what the loader does.
 -- Based on file structure: src/ServerScriptService/Server/Services/GrowthService.luau
+-- Based on file structure: src/ServerScriptService/Server/Services/GrowthService.luau
 local GrowthService = require(script.Parent.GrowthService)
+local QuestService = require(script.Parent.QuestService)
 
 local RoundService = {
     CurrentState = "Intermission",
@@ -190,7 +192,13 @@ function RoundService:OnPlayerAdded(player)
 							self.RoundStats[killer.UserId] = { Name = killer.Name, Kills = 0, Deaths = 0 }
 						end
 						self.RoundStats[killer.UserId].Kills += 1
+						
+						-- Quest Progress (Kill)
+						QuestService:UpdateProgress(killer, "Kill", 1)
 					end
+					
+					-- Quest Progress (Death)
+					QuestService:UpdateProgress(player, "Death", 1)
 				end
 			end)
 		end

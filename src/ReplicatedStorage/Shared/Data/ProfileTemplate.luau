@@ -3,6 +3,10 @@ export type ProfileData = {
 	EquippedSkin: string,
 	UnlockedSkins: {string},
 	Settings: { [string]: any },
+	DailyQuests: {
+		LastLogin: number,
+		Quests: { [string]: { Progress: number, Completed: boolean, Claimed: boolean } }
+	}
 }
 
 local CarrotSkins = {
@@ -72,6 +76,10 @@ local ProfileTemplate: ProfileData = {
 	EquippedSkin = "Default",
 	UnlockedSkins = defaultUnlocked,
 	Settings = {},
+	DailyQuests = {
+		LastLogin = 0,
+		Quests = {} -- [QuestId] = { Progress = 0, Completed = false, Claimed = false }
+	}
 }
 
 return {
