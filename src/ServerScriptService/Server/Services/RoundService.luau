@@ -111,8 +111,18 @@ function RoundService:StartRound()
 		
 		-- Find Spawn (Priority)
 		local spawnLocation = clonedMap:FindFirstChild("Spawn") or clonedMap:FindFirstChild("SpawnLocation")
-		if spawnLocation and spawnLocation:IsA("BasePart") then
-			chosenMapCFrame = spawnLocation.CFrame + Vector3.new(0, 3, 0)
+		if spawnLocation then
+			if spawnLocation:IsA("Folder") then
+				local spawns = spawnLocation:GetChildren()
+				if #spawns > 0 then
+					local randomSpawn = spawns[math.random(1, #spawns)]
+					if randomSpawn:IsA("BasePart") then
+						chosenMapCFrame = randomSpawn.CFrame + Vector3.new(0, 3, 0)
+					end
+				end
+			elseif spawnLocation:IsA("BasePart") then
+				chosenMapCFrame = spawnLocation.CFrame + Vector3.new(0, 3, 0)
+			end
 		end
 	end
 	
