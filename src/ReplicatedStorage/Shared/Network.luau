@@ -38,6 +38,12 @@ return ByteNetMax.defineNamespace("Network", function()
 					attackType = ByteNetMax.string, -- "Normal", "Combo", "Charge"
 				}),
 			}),
+			carrotHit = ByteNetMax.definePacket({
+				value = ByteNetMax.struct({
+					target = ByteNetMax.inst,
+					attackType = ByteNetMax.string,
+				}),
+			}),
 			equipSkin = ByteNetMax.definePacket({
 				value = ByteNetMax.struct({
 					skinId = ByteNetMax.string,

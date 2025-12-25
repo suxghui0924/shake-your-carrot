@@ -279,11 +279,85 @@ function Carrot:PlayAttackAnimation(step)
     end
 end
 
+local HitboxClass = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("HitboxClass"))
+
 function Carrot:PerformAttack(attackType)
-    Network.packets.carrotAttack.send({
-        attackType = attackType
-    })
-    self:PlayAttackFeedback(attackType)
+	-- Network.packets.carrotAttack.send({ attackType = attackType }) -- Removed: Only send hits now, or send for animation replication if needed?
+	-- Better to keep sending attack for server-side state (cooldowns/anticheat) or animation replication if not local?
+	-- Usually "Attack" triggers animation on server for others, "Hit" deals damage.
+	Network.packets.carrotAttack.send({
+		attackType = attackType
+	})
+	
+	self:PlayAttackFeedback(attackType)
+	
+	-- [Client-Side Hitbox Logic]
+	local player = Players.LocalPlayer
+	local character = player.Character
+	if not character then return end
+	
+	local scale = player:GetAttribute("CarrotScale") or 1.0
+	local size = 4.5 * scale -- Slightly larger than server check for responsiveness
+	local offsetZ = -1.0 - (size / 2)
+	
+	-- Create Hitbox Part
+	local hbPart = Instance.new("Part")
+	hbPart.Size = Vector3.new(size, size, size)
+	hbPart.CanCollide = false
+	hbPart.Massless = true
+	hbPart.Transparency = 1
+	hbPart.Parent = workspace
+	hbPart.CFrame = character.PrimaryPart.CFrame * CFrame.new(0, -1, offsetZ)
+	
+	local params = {
+		SizeOrPart = hbPart,
+		Debug = false, -- Set to true to see hitbox
+		DebounceTime = 0.5,
+		Blacklist = {character},
+	}
+	
+	local hitbox = HitboxClass.new(params)
+	if not hitbox then 
+		hbPart:Destroy()
+		return 
+	end
+	
+	hitbox:WeldTo(character.PrimaryPart, CFrame.new(0, 0, offsetZ))
+	
+	hitbox.HitSomeone:Connect(function(hitModels)
+		for _, model in ipairs(hitModels) do
+			local humanoid = model:FindFirstChild("Humanoid")
+			if humanoid and humanoid.Health > 0 then
+				-- Validate Team Match (Basic Client Check)
+				local targetPlayer = Players:GetPlayerFromCharacter(model)
+				if targetPlayer and targetPlayer.Team == player.Team and player.Team ~= nil then
+					continue
+				end
+
+				-- Immediate Feedback (Sound/Particle)
+				local sound = Instance.new("Sound")
+				sound.SoundId = Sounds.Hit.SoundId
+				sound.Volume = Sounds.Hit.Volume
+				sound.Parent = model:FindFirstChild("Head") or model.PrimaryPart
+				sound:Play()
+				Debris:AddItem(sound, 1)
+				
+				-- Send Hit Packet
+				Network.packets.carrotHit.send({
+					target = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart"),
+					attackType = attackType
+				})
+			end
+		end
+	end)
+	
+	hitbox:Start()
+	
+	-- Cleanup
+	task.delay(0.25, function() -- Fast swing
+		if hitbox then hitbox:Stop() hitbox:Destroy() end
+		if hbPart then hbPart:Destroy() end
+	end)
 end
 
 function Carrot:OnScaleChanged()
