@@ -14,6 +14,8 @@ function CombatService:Init()
     end)
 end
 
+
+
 function CombatService:HandleAttack(player, attackType)
     local character = player.Character
     if not character then return end
@@ -86,7 +88,6 @@ function CombatService:ApplyDamage(attacker, targetHumanoid, scale, attackType)
         targetRoot:ApplyImpulse(direction * knockback * targetRoot.AssemblyMass)
     end
     
-    print(string.format("Attacker %s hit %s for %d damage (Scale: %.2f)", attacker.Name, targetHumanoid.Parent.Name, damage, scale))
 end
 
 function CombatService:Start()

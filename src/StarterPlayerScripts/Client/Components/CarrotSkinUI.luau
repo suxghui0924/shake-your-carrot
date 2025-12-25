@@ -409,7 +409,7 @@ function CarrotSkinUI:CreateSkinsInterface()
 							BackgroundColor3 = self.Scope:Computed(function(use)
 								local id = use(self.SelectedSkin)
 								local unlocked = table.find(use(self.UnlockedSkins), id) or id == "Default"
-								return unlocked and theme.ACCENT_GREEN or theme.ACCENT_ORANGE
+								return unlocked and THEME.ACCENT_GREEN or THEME.ACCENT_ORANGE
 							end),
 							Text = self.Scope:Computed(function(use)
 								local id = use(self.SelectedSkin)
@@ -539,28 +539,24 @@ function CarrotSkinUI:CreatePreviewViewport()
 			c.Parent = world
 			local cf, size = c:GetBoundingBox()
 			c:PivotTo(CFrame.new(-cf.Position))
-			cam.CFrame = CFrame.new(Vector3.new(0, 2, size.Magnitude*2.5), Vector3.new(0,0,0)) * CFrame.Angles(math.rad(-15), 0, 0)
+			cam.CFrame = CFrame.new(Vector3.new(0, 0, size.Magnitude*2), Vector3.new(0,0,0)) * CFrame.Angles(math.rad(-10), math.rad(45), 0)
+		else
+			-- Fallback if model not found
+			local warnPart = Instance.new("Part")
+			warnPart.Size = Vector3.new(1,1,1)
+			warnPart.Color = Color3.fromRGB(255, 0, 0)
+			warnPart.Material = Enum.Material.Neon
+			warnPart.Parent = world
+			cam.CFrame = CFrame.new(Vector3.new(0, 0, 5), Vector3.new(0,0,0))
 		end
-		
-		-- Floor Pedestal
-		local pedestal = Instance.new("Part")
-		pedestal.Size = Vector3.new(5, 0.5, 5)
-		pedestal.Position = Vector3.new(0, -1.5, 0)
-		pedestal.Shape = Enum.PartType.Cylinder
-		pedestal.Orientation = Vector3.new(0,0,90)
-		pedestal.Color = THEME.ACCENT_ORANGE
-		pedestal.Material = Enum.Material.Neon
-		pedestal.Anchored = true
-		pedestal.Parent = world
 	end
 	
 	self._trove:Add(self.Scope:Observer(self.SelectedSkin):onChange(update))
 	task.defer(update)
 	
 	self._trove:Add(self.Scope:Observer(self.PreviewRotation):onChange(function()
-		local r = peek(self.PreviewRotation)
+		local _ = peek(self.PreviewRotation) -- Trigger update
 		for _, c in ipairs(world:GetChildren()) do
-			-- Rotate model only (not pedestal if we wanted)
 			if c:IsA("Model") then
 				c:PivotTo(c:GetPivot() * CFrame.Angles(0, math.rad(1), 0))
 			end

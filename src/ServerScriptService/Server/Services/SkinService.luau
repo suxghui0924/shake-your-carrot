@@ -135,38 +135,58 @@ function SkinService:ApplySkinToPlayerTools(player)
 	
 	local skinId = profileData.EquippedSkin
 	
-	-- Apply to tools in character
+	-- We need to REPLACE the tool, not just color it
+	-- Remove old tools and give new one
+	
 	local character = player.Character
 	if character then
 		for _, tool in ipairs(character:GetChildren()) do
 			if tool:IsA("Tool") and CollectionService:HasTag(tool, "Carrot") then
-				self:ApplySkinToTool(tool, skinId)
+				tool:Destroy()
 			end
 		end
 	end
 	
-	-- Apply to tools in backpack
 	local backpack = player:FindFirstChild("Backpack")
 	if backpack then
 		for _, tool in ipairs(backpack:GetChildren()) do
 			if tool:IsA("Tool") and CollectionService:HasTag(tool, "Carrot") then
-				self:ApplySkinToTool(tool, skinId)
+				tool:Destroy()
 			end
 		end
+	end
+	
+	-- Give new tool
+	self:GiveSkinTool(player, skinId)
+end
+
+function SkinService:GiveSkinTool(player, skinId)
+	local skinData = CarrotSkins[skinId]
+	if not skinData then return end
+	
+	-- Find asset
+	local target = game
+	for _, part in ipairs(string.split(skinData.AssetPath, ".")) do
+		target = target:FindFirstChild(part)
+		if not target then break end
+	end
+	
+	if target and target:IsA("Tool") then
+		local newTool = target:Clone()
+		CollectionService:AddTag(newTool, "Carrot") -- Ensure tag is present
+		
+		-- Give to backpack or character? Default to Backpack unless handled otherwise
+		-- If player has no tool currently held, maybe auto-equip? For now, Backpack.
+		newTool.Parent = player:FindFirstChild("Backpack")
+	else
+		warn("Could not find tool asset for skin:", skinId, "Path:", skinData.AssetPath)
 	end
 end
 
 function SkinService:ApplySkinToTool(tool, skinId)
-	local skinData = CarrotSkins[skinId]
-	if not skinData then return end
-	
-	-- Apply color and material to all parts
-	for _, part in ipairs(tool:GetDescendants()) do
-		if part:IsA("BasePart") then
-			part.Color = skinData.Color
-			part.Material = skinData.Material
-		end
-	end
+	-- Deprecated in favor of replacement, but kept for compatibility if needed.
+	-- Actually, let's redirect to replacement if it's a fresh spawn case?
+	-- For simplicity, we just won't call this anymore from EquipSkin.
 end
 
 function SkinService:GetToolOwner(tool)
