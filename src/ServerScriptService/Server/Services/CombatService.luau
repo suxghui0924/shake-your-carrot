@@ -24,12 +24,20 @@ local CombatService = {
 }
 
 function CombatService:Init()
-    -- Configure HitboxClass
-    if HitboxClass.Settings then
-        HitboxClass.Settings.Alive = workspace
-        -- HitboxClass.Settings.Projectiles = workspace -- Optional?
+    -- Configure HitboxClass (Physical Values inside the Module)
+    local hpModule = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("HitboxClass")
+    local settingsFolder = hpModule:FindFirstChild("Settings")
+    
+    if settingsFolder then
+        local aliveValue = settingsFolder:FindFirstChild("Alive")
+        if aliveValue and aliveValue:IsA("ObjectValue") then
+            aliveValue.Value = workspace
+            print("CombatService: HitboxClass 'Alive' set to Workspace.")
+        else
+            warn("CombatService: 'Alive' ObjectValue not found in HitboxClass.Settings. Please configure it manually if needed.")
+        end
     else
-        warn("HitboxClass.Settings not found via script. Ensure it is configured in the module hierarchy.")
+        warn("CombatService: HitboxClass 'Settings' folder not found. Please ensure the module is installed correctly.")
     end
 
     Network.packets.carrotAttack.listen(function(data, player)
@@ -49,19 +57,26 @@ function CombatService:HandleAttack(player, attackType)
     local function cleanup() end 
     
     local carrotScale = player:GetAttribute("CarrotScale") or 1.0
-    local hitRadius = 3 * carrotScale -- Slightly larger for easier hits
-    local offsetZ = -3 - (hitRadius/2) -- Position in front
+    
+    -- Hitbox Dimensions (Tall and Wide per GDD)
+    local sizeX = 5 * carrotScale
+    local sizeY = 8 * carrotScale -- Tall enough to cover jump/ground
+    local sizeZ = 5 * carrotScale
+    
+    -- Position Closer (Gap of 1 stud from RootPart)
+    local offsetZ = -1.5 - (sizeZ / 2) 
     
     -- [Create Hitbox Part]
     local hbPart = Instance.new("Part")
     hbPart.Name = "Hitbox_" .. player.Name
-    hbPart.Size = Vector3.new(hitRadius, hitRadius, hitRadius) -- Square/Cube
-    hbPart.Shape = Enum.PartType.Block -- "Square" (Cube) as requested
+    hbPart.Size = Vector3.new(sizeX, sizeY, sizeZ)
+    hbPart.Shape = Enum.PartType.Block
     hbPart.CanCollide = false
     hbPart.Massless = true
     hbPart.Transparency = 1 
     hbPart.Parent = workspace
-    -- Position in front of CHARACTER
+    
+    -- Position relative to Character
     hbPart.CFrame = character.PrimaryPart.CFrame * CFrame.new(0, 0, offsetZ)
     
     local params = {

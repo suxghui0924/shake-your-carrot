@@ -77,8 +77,8 @@ function GrowthService:GrowCarrot(player)
 	-- Increase Max Scale Limit significantly
 	local maxScale = 20.0
 	
-	-- Reduced growth rate: 1% per shake (was 5%)
-	local nextScale = currentScale * 1.01
+	-- Growth rate: 5% per shake (1/20) as per GDD
+	local nextScale = currentScale * 1.05
 	
 	-- Clamp to max size
 	nextScale = math.min(nextScale, maxScale)
