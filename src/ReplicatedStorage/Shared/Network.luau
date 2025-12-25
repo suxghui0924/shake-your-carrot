@@ -38,6 +38,16 @@ return ByteNetMax.defineNamespace("Network", function()
 					attackType = ByteNetMax.string, -- "Normal", "Combo", "Charge"
 				}),
 			}),
+			equipSkin = ByteNetMax.definePacket({
+				value = ByteNetMax.struct({
+					skinId = ByteNetMax.string,
+				}),
+			}),
+			buySkin = ByteNetMax.definePacket({
+				value = ByteNetMax.struct({
+					skinId = ByteNetMax.string,
+				}),
+			}),
 		},
 		queries = {
 			getLeaderboard = ByteNetMax.defineQuery({

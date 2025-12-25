@@ -1,7 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local Packages = ReplicatedStorage:WaitForChild("Packages")
+local Fusion = require(Packages.Fusion)
 
-local Fusion = require(script.Parent.Parent.Parent.Parent.Fusion)
 local New = Fusion.New
 local Value = Fusion.Value
 local Computed = Fusion.Computed

@@ -21,6 +21,7 @@ function Carrot:Construct()
     self.COMBO_TIMEOUT = 1.0
     self.ChargeStartTime = 0
     self.IS_CHARGING = false
+    self.LastShakeTime = 0 -- For shake animation debounce
 end
 
 function Carrot:Start()
@@ -50,6 +51,7 @@ function Carrot:Start()
         end
     end)
 
+
     -- Visual Feedback on Growth
     local player = Players.LocalPlayer
     self._trove:Connect(player.AttributeChanged, function(attribute)
@@ -57,9 +59,9 @@ function Carrot:Start()
             self:OnScaleChanged()
         end
     end)
-
-    -- Initial scale check
-    self:OnScaleChanged()
+    
+    -- Note: Removed initial OnScaleChanged() call
+    -- Animation only plays when CarrotScale actually changes (on shake/click)
 end
 
 function Carrot:RequestShake()
@@ -94,13 +96,81 @@ function Carrot:OnScaleChanged()
     local player = Players.LocalPlayer
     local scale = player:GetAttribute("CarrotScale") or 1.0
     
+    -- Debounce check
+    local now = os.clock()
+    if self.LastShakeTime and (now - self.LastShakeTime) < 0.6 then
+        return -- Skip if animation played too recently
+    end
+    self.LastShakeTime = now
+    
     -- Sound FX
     self:PlayGrowthSound()
+    
+    -- Shake Animation (Squash/Stretch)
+    self:PlayShakeAnimation()
     
     -- Visual FX (Highlight/Glow)
     self:PlayGrowthVisuals()
     
     print("Carrot Component Scale Updated:", scale)
+end
+
+function Carrot:PlayShakeAnimation()
+    local tool = self.Instance
+    if not tool:IsA("Tool") then return end
+    
+    -- Get all parts in the tool
+    local parts = {}
+    for _, descendant in ipairs(tool:GetDescendants()) do
+        if descendant:IsA("BasePart") then
+            table.insert(parts, descendant)
+        end
+    end
+    
+    if #parts == 0 then return end
+    
+    -- Store original sizes
+    local originalSizes = {}
+    for _, part in ipairs(parts) do
+        if not part:GetAttribute("OriginalShakeSize") then
+            originalSizes[part] = part.Size
+        else
+            originalSizes[part] = part:GetAttribute("OriginalShakeSize")
+        end
+    end
+    
+    -- Squash/Stretch sequence using SIZE changes
+    local scaleSequence = {
+        -- Squash (compress vertically, expand horizontally)
+        { Time = 0.08, Scale = Vector3.new(1.15, 0.85, 1.15), Easing = Enum.EasingStyle.Quad, Direction = Enum.EasingDirection.Out },
+        -- Stretch (expand vertically, compress horizontally)
+        { Time = 0.12, Scale = Vector3.new(0.85, 1.2, 0.85), Easing = Enum.EasingStyle.Back, Direction = Enum.EasingDirection.Out },
+        -- Wobble 1
+        { Time = 0.1, Scale = Vector3.new(1.08, 0.92, 1.08), Easing = Enum.EasingStyle.Sine, Direction = Enum.EasingDirection.InOut },
+        -- Wobble 2
+        { Time = 0.1, Scale = Vector3.new(0.95, 1.05, 0.95), Easing = Enum.EasingStyle.Sine, Direction = Enum.EasingDirection.InOut },
+        -- Return to original
+        { Time = 0.15, Scale = Vector3.new(1, 1, 1), Easing = Enum.EasingStyle.Elastic, Direction = Enum.EasingDirection.Out }
+    }
+    
+    -- Play sequence
+    local currentDelay = 0
+    for _, step in ipairs(scaleSequence) do
+        task.delay(currentDelay, function()
+            for _, part in ipairs(parts) do
+                if part and part.Parent then
+                    local targetSize = originalSizes[part] * step.Scale
+                    local tween = TweenService:Create(
+                        part,
+                        TweenInfo.new(step.Time, step.Easing, step.Direction),
+                        {Size = targetSize}
+                    )
+                    tween:Play()
+                end
+            end
+        end)
+        currentDelay = currentDelay + step.Time
+    end
 end
 
 function Carrot:PlayGrowthSound()

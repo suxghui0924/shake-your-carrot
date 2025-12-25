@@ -65,11 +65,28 @@ function GrowthService:GetToolOwner(tool)
 end
 
 function GrowthService:GrowCarrot(player)
-    local currentScale = self.Growths[player] or 1.0
-    local nextScale = currentScale * 1.05
-    
-    self.Growths[player] = nextScale
-    self:ApplyScale(player, nextScale)
+	local currentScale = self.Growths[player] or 1.0
+	
+	-- Get player character size to calculate max carrot size
+	local character = player.Character
+	if not character then return end
+	
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then return end
+	
+	-- Calculate max scale: player's height (HipHeight is roughly the character height)
+	-- Default character height is around 5-6 studs, so max scale = player height
+	local playerHeight = humanoid.HipHeight + 2 -- Add 2 for torso/head
+	local maxScale = playerHeight -- Carrot can grow up to player's height
+	
+	-- Reduced growth rate: 1% per shake (was 5%)
+	local nextScale = currentScale * 1.01
+	
+	-- Clamp to max size
+	nextScale = math.min(nextScale, maxScale)
+	
+	self.Growths[player] = nextScale
+	self:ApplyScale(player, nextScale)
 end
 
 function GrowthService:ResetGrowth(player)

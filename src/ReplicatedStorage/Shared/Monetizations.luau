@@ -1,14 +1,38 @@
+-- ReplicatedStorage/Shared/Monetizations.luau
+
 return {
 	Products = {
-		[1111111] = {
-			Name = "qqqqqq",
-			Description = "qwdwqd",
+		-- Coins Bundles
+		[1001] = {
+			Name = "1,000 Coins",
+			Description = "Get 1,000 coins immediately!",
+			Amount = 1000,
+			Type = "Coins",
+		},
+		[1002] = {
+			Name = "5,000 Coins",
+			Description = "Get 5,000 coins immediately!",
+			Amount = 5000,
+			Type = "Coins",
+		},
+		[1003] = {
+			Name = "10,000 Coins",
+			Description = "Get 10,000 coins immediately!",
+			Amount = 10000,
+			Type = "Coins",
+		},
+		
+		-- Skins (Alternative purchase with Robux)
+		[2001] = {
+			Name = "Unlock Golden Carrot",
+			SkinId = "Golden",
+			Type = "Skin",
 		},
 	},
 	GamePasses = {
-		-- [11111111] = {
-		-- 	Name = "Example GamePass",
-		-- 	Description = "Template",
-		-- },
+		[3001] = {
+			Name = "VIP Pass",
+			Description = "Double coins and exclusive benefits!",
+		},
 	},
 }
